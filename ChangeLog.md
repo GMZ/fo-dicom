@@ -1,3 +1,12 @@
+### v1.0.38.3 (3/27/2015) 
+- Not versioned to .39 or higher due to fracturing of version, which is base
+- Will consolidate once new primary fork is decided on. CH
+* Merged @hdesouky's Fix for memory corruption when decoding on the same process for long Periods.
+* Added Dicom Print support based on @hdesouky
+* Minor re-factorings
+* Added WPF based Dicom Print SCU Example
+* Added WPF based Dicom Print SCP Example
+
 #### v1.0.38 (6/20/2014)
 * Fix OW swap for single byte images
 * Better handling of long duration and aborted connections
