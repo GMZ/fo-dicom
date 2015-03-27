@@ -115,6 +115,16 @@ namespace Dicom.Imaging {
 			}
 		}
 
+	    public Boolean IsInverted {
+            get {
+                return _renderOptions != null && _renderOptions.Invert;
+            }
+            set{
+                if (_renderOptions != null)
+                    _renderOptions.Invert = value;
+            }
+	    }
+
 		/// <summary>Show or hide DICOM overlays</summary>
 		public bool ShowOverlays {
 			get;
@@ -137,17 +147,30 @@ namespace Dicom.Imaging {
 
 			var graphic = new ImageGraphic(_pixelData);
 
-			if (ShowOverlays) {
-				foreach (var overlay in _overlays) {
-					if ((frame + 1) < overlay.OriginFrame || (frame + 1) > (overlay.OriginFrame + overlay.NumberOfFrames - 1))
-						continue;
+		    try
+		    {
+		        if (ShowOverlays) {
+		            foreach (var overlay in _overlays) {
+		                if ((frame + 1) < overlay.OriginFrame || (frame + 1) > (overlay.OriginFrame + overlay.NumberOfFrames - 1))
+		                    continue;
 
-					var og = new OverlayGraphic(PixelDataFactory.Create(overlay), overlay.OriginX - 1, overlay.OriginY - 1, OverlayColor);
-					graphic.AddOverlay(og);
-				}
-			}
+		                var og = new OverlayGraphic(PixelDataFactory.Create(overlay), overlay.OriginX - 1, overlay.OriginY - 1, OverlayColor);
+		                graphic.AddOverlay(og);
+		                og.Scale(Scale);
+		            }
+		        }
 
-			return graphic.RenderImage(_pipeline.LUT);
+		        var image = graphic.RenderImage(_pipeline.LUT);
+		        return new Bitmap(image);
+		    }
+		    finally
+		    {
+		        if (graphic != null)
+               {
+                    graphic.Dispose();
+               }
+		    }
+
 		}
 #endif
 
@@ -162,17 +185,28 @@ namespace Dicom.Imaging {
 
 			var graphic = new ImageGraphic(_pixelData);
 
-			if (ShowOverlays) {
-				foreach (var overlay in _overlays) {
-					if ((frame + 1) < overlay.OriginFrame || (frame + 1) > (overlay.OriginFrame + overlay.NumberOfFrames - 1))
-						continue;
+		    try
+		    {
+		        if (ShowOverlays) {
+		            foreach (var overlay in _overlays) {
+		                if ((frame + 1) < overlay.OriginFrame || (frame + 1) > (overlay.OriginFrame + overlay.NumberOfFrames - 1))
+		                    continue;
 
-					var og = new OverlayGraphic(PixelDataFactory.Create(overlay), overlay.OriginX - 1, overlay.OriginY - 1, OverlayColor);
-					graphic.AddOverlay(og);
-				}
-			}
+		                var og = new OverlayGraphic(PixelDataFactory.Create(overlay), overlay.OriginX - 1, overlay.OriginY - 1, OverlayColor);
+		                graphic.AddOverlay(og);
+		                og.Scale(Scale);
+		            }
+		        }
 
-			return graphic.RenderImageSource(_pipeline.LUT);
+		        return graphic.RenderImageSource(_pipeline.LUT);
+		    }
+		    finally
+		    {
+                if (graphic != null)
+		        {
+                    graphic.Dispose();
+		        }
+		    }
 		}
 
 

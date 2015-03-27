@@ -44,7 +44,16 @@ namespace Dicom.IO.Buffer {
 				int remain = (int)Buffers[pos].Size - offset;
 
 				if (Buffers[pos].IsMemory)
-					System.Buffer.BlockCopy(Buffers[pos].Data, offset, data, offset2, remain);
+				{
+				    try
+				    {
+				        System.Buffer.BlockCopy(Buffers[pos].Data, offset, data, offset2, remain);
+				    }
+				    catch (Exception)
+				    {
+                        data = Buffers[pos].Data.ToArray();
+				    }
+				}
 				else {
 					byte[] temp = Buffers[pos].GetByteRange(offset, remain);
 					System.Buffer.BlockCopy(temp, 0, data, offset2, remain);
