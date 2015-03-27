@@ -1,6 +1,4 @@
-### v1.0.38.3 (3/27/2015) 
-- Not versioned to .39 or higher due to fracturing of version, which is base
-- Will consolidate once new primary fork is decided on. CH
+### v1.0.39 (3/27/2015) 
 * Merged @hdesouky's Fix for memory corruption when decoding on the same process for long Periods.
 * Added Dicom Print support based on @hdesouky
 * Minor re-factorings
