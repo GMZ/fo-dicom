@@ -103,7 +103,7 @@ namespace Dicom.Network {
 			if (exception != null)
 				Logger.Error("Connection closed with error: {0}", exception.Message);
 			else
-				Logger.Error("Connection closed");
+				Logger.Info("Connection closed");
 
 			if (this is IDicomServiceProvider)
 				(this as IDicomServiceProvider).OnConnectionClosed(exception);
