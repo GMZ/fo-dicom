@@ -6,7 +6,7 @@
         <title>Fellow Oak DICOM for .NET</title>
         <authors>fo-dicom contributors</authors>
         <licenseUrl>http://opensource.org/licenses/MS-PL</licenseUrl>
-        <projectUrl>https://github.com/fo-dicom/fo-dicom</projectUrl>
+        <projectUrl>https://github.com/GMZ/fo-dicom/tree/Development</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A DICOM library for .NET</description>
         <language>en-US</language>
@@ -17,6 +17,5 @@
         <file src="..\fo-dicom.targets" target="build\fo-dicom.targets" />
         <file src="..\DICOM\bin\Release\Dicom.dll" target="lib\net45\Dicom.dll" />
         <file src="..\DICOM\bin\Release\Dicom.pdb" target="lib\net45\Dicom.pdb" />
-        <file src="..\DICOM\bin\Release\Dicom.xml" target="lib\net45\Dicom.xml" />
     </files>
 </package>

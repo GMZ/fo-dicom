@@ -6,7 +6,7 @@
         <title>Fellow Oak DICOM MetroLog support</title>
         <authors>fo-dicom contributors</authors>
         <licenseUrl>http://opensource.org/licenses/MS-PL</licenseUrl>
-        <projectUrl>https://github.com/fo-dicom/fo-dicom</projectUrl>
+        <projectUrl>https://github.com/GMZ/fo-dicom/tree/Development</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Support library for using MetroLog log handler with fo-dicom.</description>
         <language>en-US</language>
@@ -16,7 +16,7 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="..\Logging\DICOM.MetroLog\bin\Release\Dicom.MetroLog.dll" target="lib\net45" />
-        <file src="..\Logging\DICOM.MetroLog\bin\Release\Dicom.MetroLog.pdb" target="lib\net45" />
+        <file src="..\Logging\DICOM.MetroLog\bin\Release\DICOM.MetroLog.dll" target="lib\net45\DICOM.MetroLog.dll" />
+        <file src="..\Logging\DICOM.MetroLog\bin\Release\DICOM.MetroLog.pdb" target="lib\net45\DICOM.MetroLog.pdb" />
     </files>
 </package>

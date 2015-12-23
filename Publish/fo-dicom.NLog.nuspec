@@ -6,7 +6,7 @@
         <title>Fellow Oak DICOM NLog support</title>
         <authors>fo-dicom contributors</authors>
         <licenseUrl>http://opensource.org/licenses/MS-PL</licenseUrl>
-        <projectUrl>https://github.com/fo-dicom/fo-dicom</projectUrl>
+        <projectUrl>https://github.com/GMZ/fo-dicom/tree/Development</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Support library for using NLog log handler with fo-dicom.</description>
         <language>en-US</language>
@@ -16,7 +16,7 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="..\Logging\DICOM.NLog\bin\Release\Dicom.NLog.dll" target="lib\net45\Dicom.NLog.dll" />
-        <file src="..\Logging\DICOM.NLog\bin\Release\Dicom.NLog.pdb" target="lib\net45\Dicom.NLog.pdb" />
+        <file src="..\Logging\DICOM.NLog\bin\Release\DICOM.NLog.dll" target="lib\net45\Dicom.NLog.dll" />
+        <file src="..\Logging\DICOM.NLog\bin\Release\DICOM.NLog.pdb" target="lib\net45\Dicom.NLog.pdb" />
     </files>
 </package>

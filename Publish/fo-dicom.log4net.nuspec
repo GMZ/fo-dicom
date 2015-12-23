@@ -6,7 +6,7 @@
         <title>Fellow Oak DICOM log4net support</title>
         <authors>fo-dicom contributors</authors>
         <licenseUrl>http://opensource.org/licenses/MS-PL</licenseUrl>
-        <projectUrl>https://github.com/fo-dicom/fo-dicom</projectUrl>
+        <projectUrl>https://github.com/GMZ/fo-dicom/tree/Development</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>Support library for using log4net log handler with fo-dicom.</description>
         <language>en-US</language>
@@ -16,7 +16,7 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="..\Logging\DICOM.log4net\bin\Release\Dicom.log4net.dll" target="lib\net45\Dicom.log4net.dll" />
-        <file src="..\Logging\DICOM.log4net\bin\Release\Dicom.log4net.pdb" target="lib\net45\Dicom.log4net.pdb" />
+        <file src="..\Logging\DICOM.log4net\bin\Release\DICOM.log4net.dll" target="lib\net45\Dicom.log4net.dll" />
+        <file src="..\Logging\DICOM.log4net\bin\Release\DICOM.log4net.pdb" target="lib\net45\Dicom.log4net.pdb" />
     </files>
 </package>
