@@ -1,3 +1,20 @@
+#### v1.1.0 (12/18/2015)
+* Enable configuration of default encoding in the DicomDatasetReaderObserver (#54)
+* DicomDataset.Add(DicomTag, ...) method does not support multi-valued LO, PN, SH and UI tags (#51)
+* Explicit VR file parsing failures due to strictness (#47)
+* Overlay scaling in WPF images (#46)
+* Prevent non-socket related exceptions from being swallowed (#45)
+* Codec loading - add logging and default the search filter wildcard (#41)
+* Use memory mapped file buffer to improve large image reading (#17)
+* Improved reliability in search for native codec assemblies (#14)
+* Consistent handling of Get&lt;T&gt; default values (#10)
+* DICOM dictionary (tags and UIDs) updated to version 2015c (#9, #44)
+* UC, UR and OD value representations added (#9, #48)
+* Serilog support added; NLog and Serilog loggers moved to separate assemblies (#8, #34)
+* Corrected Color32.B getter (#7)
+* Upgraded to .NET 4.5 and C/C++ toolset v120 (#4)
+* Use UTF-8 encoding where appropriate (#2, #20, #21)
+
 ### v1.0.39 (3/27/2015) 
 * Merged @hdesouky's Fix for memory corruption when decoding on the same process for long Periods.
 * Added Dicom Print support based on @hdesouky
@@ -5,7 +22,7 @@
 * Added WPF based Dicom Print SCU Example
 * Added WPF based Dicom Print SCP Example
 
-#### v1.0.38 (6/20/2014)
+#### v1.0.38 (withdrawn)
 * Fix OW swap for single byte images
 * Better handling of long duration and aborted connections
 * Many imported extensions and bug fixes!

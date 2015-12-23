@@ -3,13 +3,12 @@
 Please join the [Google group](http://groups.google.com/group/fo-dicom) for updates and support. Binaries are available from [GitHub](https://github.com/rcd/fo-dicom/releases) and [NuGet](http://www.nuget.org/packages/fo-dicom).
 
 ### Features
-* High-performance, fully asynchronous, .NET 4.0 API
+* Targets .NET 4.5 and higher
+* DICOM dictionary version 2015c
+* High-performance, fully asynchronous API
 * JPEG (including lossless), JPEG-LS, JPEG2000, and RLE image compression
 * Supports very large datasets with content loading on demand
 * Image rendering
-
-### Notes
-* Support for compressed images requires the Visual Studio 2010 SP1 Redistributable Package to be installed. ([x86](http://www.microsoft.com/en-us/download/details.aspx?id=8328) or [x64](http://www.microsoft.com/en-us/download/details.aspx?id=14632)) 
 
 ### Examples
 
@@ -73,11 +72,13 @@ client.Send("127.0.0.1", 104, false, "SCU-AE", "SCP-AE");
 ```
 
 ### Contributors
+* [Colby Dillion](https://github.com/rcd)
+* [Anders Gustafsson](https://github.com/anders9ustafsson) (Cureos AB)
 * [Hesham Desouky](https://github.com/hdesouky) (Nebras Technology)
-* [Mahesh Dubey](https://github.com/mdubey82)
-* [Anders Gustafsson](https://github.com/cureos) (Cureos AB)
-* [Justin Wake](https://github.com/jwake)
+* [Ian Yates](http://github.com/IanYates)
 * [Chris Horn](https://github.com/GMZ)
+* [Mahesh Dubey](https://github.com/mdubey82)
+* [Justin Wake](https://github.com/jwake)
 * [captainstark](https://github.com/captainstark)
 
 ### License

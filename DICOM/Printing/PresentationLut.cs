@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// Copyright (c) 2012-2015 fo-dicom contributors.
+// Licensed under the Microsoft Public License (MS-PL).
+
+using System;
 
 namespace Dicom.Printing
 {
     public class PresentationLut : DicomDataset
     {
-        #region Public Properties
 
         public static readonly DicomUID SopClassUid = DicomUID.PresentationLUTSOPClass;
 
@@ -59,16 +58,25 @@ namespace Dicom.Printing
         {
             get
             {
-                return LutSequence != null 
-                    ? LutSequence.Get(DicomTag.LUTDescriptor, string.Empty) 
-                    : string.Empty;
+                if (LutSequence != null)
+                {
+                    return LutSequence.Get(DicomTag.LUTDescriptor, string.Empty);
+                }
+                else
+                {
+                    return string.Empty;
+                }
             }
             set
             {
                 if (LutSequence != null)
+                {
                     LutSequence.Add(DicomTag.LUTDescriptor, value);
+                }
                 else
+                {
                     throw new InvalidProgramException("No LUT sequence found, call CreateLutSequence first");
+                }
             }
         }
 
@@ -76,36 +84,54 @@ namespace Dicom.Printing
         {
             get
             {
-                return LutSequence != null 
-                    ? LutSequence.Get<ushort[]>(DicomTag.LUTData) 
-                    : new ushort[0];
+                if (LutSequence != null)
+                {
+                    return LutSequence.Get<ushort[]>(DicomTag.LUTData);
+                }
+                else
+                {
+                    return new ushort[0];
+                }
             }
             set
             {
                 if (LutSequence != null)
+                {
                     LutSequence.Add(DicomTag.LUTData, value);
+                }
                 else
+                {
                     throw new InvalidProgramException("No LUT sequence found, call CreateLutSequence first");
+                }
             }
         }
 
         public string PresentationLutShape
         {
-            get { return Get(DicomTag.PresentationLUTShape, "IDENTITY"); }
-            set { Add(DicomTag.PresentationLUTShape, value); }
+            get
+            {
+                return this.Get(DicomTag.PresentationLUTShape, string.Empty);
+            }
+            set
+            {
+                this.Add(DicomTag.PresentationLUTShape, value);
+            }
         }
-
-        #endregion
 
         #region Constrctuors
 
         public PresentationLut(DicomUID sopInstance = null)
+            : base()
         {
-            InternalTransferSyntax = DicomTransferSyntax.ExplicitVRLittleEndian;
+            this.InternalTransferSyntax = DicomTransferSyntax.ExplicitVRLittleEndian;
             if (sopInstance == null || sopInstance.UID == string.Empty)
+            {
                 SopInstanceUid = DicomUID.Generate();
+            }
             else
+            {
                 SopInstanceUid = sopInstance;
+            }
             CreateLutSequence();
         }
 
@@ -115,7 +141,6 @@ namespace Dicom.Printing
             {
                 throw new ArgumentNullException("dataset");
             }
-            SopInstanceUid = sopInstance;
             dataset.CopyTo(this);
 
         }

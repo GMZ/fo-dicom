@@ -55,7 +55,7 @@ namespace Dicom_Print_SCU
             };
             SimpleConfigurator.ConfigureForTargetLogging(asyncWrapper, NLog.LogLevel.Debug);
 
-            LogManager.Default = new NLogManager();
+            //LogManager.Default = new NLogManager();
         }
 
         #endregion // Logging

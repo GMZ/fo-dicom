@@ -409,7 +409,7 @@ namespace Dicom.PrintScp
             e.PageSettings.Margins.Top = 25;
             e.PageSettings.Margins.Bottom = 25;
 
-            e.PageSettings.Landscape = _currentFilmBox.FilmOrientation == "LANDSCAPE";
+            e.PageSettings.Landscape = _currentFilmBox.FilmOrienation == "LANDSCAPE";
 
         }
 

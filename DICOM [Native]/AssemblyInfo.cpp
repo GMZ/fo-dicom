@@ -1,3 +1,6 @@
+// Copyright (c) 2012-2015 fo-dicom contributors.
+// Licensed under the Microsoft Public License (MS-PL).
+
 #include "../SharedAssemblyInfo.cs"
 
 ; // terminate cs "include"
@@ -14,4 +17,3 @@ using namespace System::Security::Permissions;
 
 [assembly: ComVisible(false)];
 [assembly: CLSCompliantAttribute(true)];
-[assembly: SecurityPermission(SecurityAction::RequestMinimum, UnmanagedCode = true)];
