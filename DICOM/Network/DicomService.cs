@@ -47,19 +47,29 @@ namespace Dicom.Network
 
         private int _readLength;
 
-        private bool _isConnected;
-
         private ThreadPoolQueue<int> _processQueue;
 
         private DicomServiceOptions _options;
 
         private readonly Encoding _fallbackEncoding;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DicomService"/> class.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="log">The log.</param>
         protected DicomService(Stream stream, Logger log)
             : this(stream, DicomEncoding.Default, log)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DicomService"/> class.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="fallbackEncoding">The fallback encoding.</param>
+        /// <param name="log">The log.</param>
+        /// <exception cref="System.ArgumentNullException">fallbackEncoding</exception>
         protected DicomService(Stream stream, Encoding fallbackEncoding, Logger log)
         {
             if (fallbackEncoding == null)
@@ -74,21 +84,24 @@ namespace Dicom.Network
             _pending = new List<DicomRequest>();
             _processQueue = new ThreadPoolQueue<int>();
             _processQueue.DefaultGroup = Int32.MinValue;
-            _isConnected = true;
+            IsConnected = true;
             _fallbackEncoding = fallbackEncoding;
             Logger = log ?? LogManager.Default.GetLogger("Dicom.Network");
             BeginReadPDUHeader();
             Options = DicomServiceOptions.Default;
         }
 
+        /// <summary>
+        /// Gets or sets the logger.
+        /// </summary>
         public Logger Logger { get; set; }
 
+        /// <summary>
+        /// Gets or sets the options.
+        /// </summary>
         public DicomServiceOptions Options
         {
-            get
-            {
-                return _options;
-            }
+            get { return _options; }
             set
             {
                 _options = value;
@@ -98,18 +111,30 @@ namespace Dicom.Network
 
         private string LogID { get; set; }
 
+        /// <summary>
+        /// Gets or sets the userstate.
+        /// </summary>
         public object UserState { get; set; }
 
+        /// <summary>
+        /// Gets the association.
+        /// </summary>
         public DicomAssociation Association { get; internal set; }
 
-        public bool IsConnected
-        {
-            get
-            {
-                return _isConnected;
-            }
-        }
+        /// <summary>
+        /// Gets a value indicating whether this instance is connected.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is connected; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsConnected { get; private set; }
 
+        /// <summary>
+        /// Gets a value indicating whether this instance is send queue empty.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is send queue empty; otherwise, <c>false</c>.
+        /// </value>
         public bool IsSendQueueEmpty
         {
             get
@@ -118,26 +143,31 @@ namespace Dicom.Network
             }
         }
 
+        /// <summary>
+        /// Gets or sets the maximum PDUs in queue.
+        /// </summary>
+        // ReSharper disable once InconsistentNaming
         public int MaximumPDUsInQueue { get; set; }
 
         private void CloseConnection(Exception exception)
         {
-            if (!_isConnected) return;
+            if (!IsConnected) return;
 
-            _isConnected = false;
+            IsConnected = false;
             try
             {
                 _network.Close();
             }
-            catch
-            {
-            }
+            // ReSharper disable once EmptyGeneralCatchClause
+            catch { }
 
             if (exception != null) Logger.Error("Connection closed with error: {@error}", exception);
             else Logger.Info("Connection closed");
 
+            // ReSharper disable PossibleNullReferenceException
             if (this is IDicomServiceProvider) (this as IDicomServiceProvider).OnConnectionClosed(exception);
             else if (this is IDicomServiceUser) (this as IDicomServiceUser).OnConnectionClosed(exception);
+            // ReSharper restore PossibleNullReferenceException
         }
 
         private void BeginReadPDUHeader()
@@ -146,7 +176,7 @@ namespace Dicom.Network
             {
                 _readLength = 6;
 
-                byte[] buffer = new byte[6];
+                var buffer = new byte[6];
                 _network.BeginRead(buffer, 0, 6, EndReadPDUHeader, buffer);
             }
             catch (ObjectDisposedException)
@@ -178,9 +208,9 @@ namespace Dicom.Network
         {
             try
             {
-                byte[] buffer = (byte[])result.AsyncState;
+                var buffer = (byte[])result.AsyncState;
 
-                int count = _network.EndRead(result);
+                var count = _network.EndRead(result);
                 if (count == 0)
                 {
                     // disconnected
@@ -196,7 +226,7 @@ namespace Dicom.Network
                     return;
                 }
 
-                int length = BitConverter.ToInt32(buffer, 2);
+                var length = BitConverter.ToInt32(buffer, 2);
                 length = Endian.Swap(length);
 
                 _readLength = length;
@@ -238,9 +268,9 @@ namespace Dicom.Network
         {
             try
             {
-                byte[] buffer = (byte[])result.AsyncState;
+                var buffer = (byte[])result.AsyncState;
 
-                int count = _network.EndRead(result);
+                var count = _network.EndRead(result);
                 if (count == 0)
                 {
                     // disconnected
@@ -271,6 +301,7 @@ namespace Dicom.Network
                                 "{callingAE} <- Association request:\n{association}",
                                 LogID,
                                 Association.ToString());
+                            // ReSharper disable once PossibleNullReferenceException
                             if (this is IDicomServiceProvider) (this as IDicomServiceProvider).OnReceiveAssociationRequest(Association);
                             break;
                         }
@@ -283,6 +314,7 @@ namespace Dicom.Network
                                 "{calledAE} <- Association accept:\n{assocation}",
                                 LogID,
                                 Association.ToString());
+                            // ReSharper disable once PossibleNullReferenceException
                             if (this is IDicomServiceUser) (this as IDicomServiceUser).OnReceiveAssociationAccept(Association);
                             break;
                         }
@@ -297,6 +329,7 @@ namespace Dicom.Network
                                 pdu.Source,
                                 pdu.Reason);
                             if (this is IDicomServiceUser)
+                                // ReSharper disable once PossibleNullReferenceException
                                 (this as IDicomServiceUser).OnReceiveAssociationReject(
                                     pdu.Result,
                                     pdu.Source,
@@ -316,6 +349,7 @@ namespace Dicom.Network
                             var pdu = new AReleaseRQ();
                             pdu.Read(raw);
                             Logger.Info("{logId} <- Association release request", LogID);
+                            // ReSharper disable once PossibleNullReferenceException
                             if (this is IDicomServiceProvider) (this as IDicomServiceProvider).OnReceiveAssociationReleaseRequest();
                             break;
                         }
@@ -324,6 +358,7 @@ namespace Dicom.Network
                             var pdu = new AReleaseRP();
                             pdu.Read(raw);
                             Logger.Info("{logId} <- Association release response", LogID);
+                            // ReSharper disable once PossibleNullReferenceException
                             if (this is IDicomServiceUser) (this as IDicomServiceUser).OnReceiveAssociationReleaseResponse();
                             CloseConnection(null);
                             break;
@@ -333,8 +368,10 @@ namespace Dicom.Network
                             var pdu = new AAbort();
                             pdu.Read(raw);
                             Logger.Info("{logId} <- Abort: {pduSource} - {pduReason}", LogID, pdu.Source, pdu.Reason);
+                            // ReSharper disable PossibleNullReferenceException
                             if (this is IDicomServiceProvider) (this as IDicomServiceProvider).OnReceiveAbort(pdu.Source, pdu.Reason);
                             else if (this is IDicomServiceUser) (this as IDicomServiceUser).OnReceiveAbort(pdu.Source, pdu.Reason);
+                            // ReSharper restore PossibleNullReferenceException
                             CloseConnection(null);
                             break;
                         }
@@ -402,14 +439,18 @@ namespace Dicom.Network
                             {
                                 var pc = Association.PresentationContexts.FirstOrDefault(x => x.ID == pdv.PCID);
 
-                                var file = new DicomFile();
-                                file.FileMetaInfo.MediaStorageSOPClassUID = pc.AbstractSyntax;
-                                file.FileMetaInfo.MediaStorageSOPInstanceUID =
-                                    _dimse.Command.Get<DicomUID>(DicomTag.AffectedSOPInstanceUID);
-                                file.FileMetaInfo.TransferSyntax = pc.AcceptedTransferSyntax;
-                                file.FileMetaInfo.ImplementationClassUID = Association.RemoteImplemetationClassUID;
-                                file.FileMetaInfo.ImplementationVersionName = Association.RemoteImplementationVersion;
-                                file.FileMetaInfo.SourceApplicationEntityTitle = Association.CallingAE;
+                                var file = new DicomFile
+                                {
+                                    FileMetaInfo =
+                                    {
+                                        MediaStorageSOPClassUID = pc.AbstractSyntax,
+                                        MediaStorageSOPInstanceUID = _dimse.Command.Get<DicomUID>(DicomTag.AffectedSOPInstanceUID),
+                                        TransferSyntax = pc.AcceptedTransferSyntax,
+                                        ImplementationClassUID = Association.RemoteImplemetationClassUID,
+                                        ImplementationVersionName = Association.RemoteImplementationVersion,
+                                        SourceApplicationEntityTitle = Association.CallingAE
+                                    }
+                                };
 
                                 _dimseStream = CreateCStoreReceiveStream(file);
                                 _dimseStreamFile = file.File == null ? null : file.File.Name;
@@ -432,11 +473,9 @@ namespace Dicom.Network
 
                             var command = new DicomDataset();
 
-                            var reader = new DicomReader();
-                            reader.IsExplicitVR = false;
+                            var reader = new DicomReader {IsExplicitVR = false};
                             reader.Read(new StreamByteSource(_dimseStream), new DicomDatasetReaderObserver(command));
 
-                            _dimseStream.Dispose();
                             _dimseStream = null;
                             _dimseStreamFile = null;
 
@@ -529,17 +568,16 @@ namespace Dicom.Network
 
                                 var pc = Association.PresentationContexts.FirstOrDefault(x => x.ID == pdv.PCID);
 
-                                _dimse.Dataset = new DicomDataset();
-                                _dimse.Dataset.InternalTransferSyntax = pc.AcceptedTransferSyntax;
+                                _dimse.Dataset = new DicomDataset {InternalTransferSyntax = pc.AcceptedTransferSyntax};
 
-                                var source = new StreamByteSource(_dimseStream);
-                                source.Endian = pc.AcceptedTransferSyntax.Endian;
+                                var source = new StreamByteSource(_dimseStream)
+                                {
+                                    Endian = pc.AcceptedTransferSyntax.Endian
+                                };
 
-                                var reader = new DicomReader();
-                                reader.IsExplicitVR = pc.AcceptedTransferSyntax.IsExplicitVR;
+                                var reader = new DicomReader {IsExplicitVR = pc.AcceptedTransferSyntax.IsExplicitVR};
                                 reader.Read(source, new DicomDatasetReaderObserver(_dimse.Dataset));
 
-                                _dimseStream.Dispose();
                                 _dimseStream = null;
                                 _dimseStreamFile = null;
                             }
@@ -551,7 +589,6 @@ namespace Dicom.Network
                                 {
                                     var dicomFile = GetCStoreDicomFile();
 
-                                    _dimseStream.Dispose();
                                     _dimseStream = null;
                                     _dimseStreamFile = null;
 
@@ -580,7 +617,8 @@ namespace Dicom.Network
                                 }
                             }
 
-                            if (DicomMessage.IsRequest(_dimse.Type)) ThreadPool.QueueUserWorkItem(PerformDimseCallback, _dimse);
+                            if (DicomMessage.IsRequest(_dimse.Type)) 
+                                ThreadPool.QueueUserWorkItem(PerformDimseCallback, _dimse);
                             else
                                 _processQueue.Queue(
                                     (_dimse as DicomResponse).RequestMessageID,
@@ -638,7 +676,7 @@ namespace Dicom.Network
         {
             if (!string.IsNullOrWhiteSpace(_dimseStreamFile))
             {
-                _dimseStream.Dispose();
+                _dimseStream.Close();
                 _dimseStream = null;
 
                 var file = DicomFile.Open(_dimseStreamFile, _fallbackEncoding);
@@ -660,6 +698,7 @@ namespace Dicom.Network
 
         private void PerformDimseCallback(object state)
         {
+            // ReSharper disable PossibleNullReferenceException
             var dimse = state as DicomMessage;
 
             try
@@ -675,7 +714,7 @@ namespace Dicom.Network
                         if (req != null)
                         {
                             rsp.UserState = req.UserState;
-                            (req as DicomRequest).PostResponse(this, rsp);
+                            req.PostResponse(this, rsp);
                             if (rsp.Status.State != DicomState.Pending) _pending.Remove(req);
                         }
                     }
@@ -693,6 +732,7 @@ namespace Dicom.Network
                     else throw new DicomNetworkException("C-Store SCP not implemented");
                 }
 
+                // ReSharper disable SuspiciousTypeConversion.Global
                 if (dimse.Type == DicomCommandField.CFindRequest)
                 {
                     if (this is IDicomCFindProvider)
@@ -714,11 +754,13 @@ namespace Dicom.Network
                     }
                     else throw new DicomNetworkException("C-Move SCP not implemented");
                 }
+                // ReSharper restore SuspiciousTypeConversion.Global
 
                 if (dimse.Type == DicomCommandField.CEchoRequest)
                 {
                     if (this is IDicomCEchoProvider)
                     {
+                        // ReSharper disable once PossibleNullReferenceException
                         var response = (this as IDicomCEchoProvider).OnCEchoRequest(dimse as DicomCEchoRequest);
                         SendResponse(response);
                         return;
@@ -726,14 +768,14 @@ namespace Dicom.Network
                     else throw new DicomNetworkException("C-Echo SCP not implemented");
                 }
 
-                if (dimse.Type == DicomCommandField.NActionRequest || dimse.Type == DicomCommandField.NCreateRequest
-                    || dimse.Type == DicomCommandField.NDeleteRequest
-                    || dimse.Type == DicomCommandField.NEventReportRequest
-                    || dimse.Type == DicomCommandField.NGetRequest || dimse.Type == DicomCommandField.NSetRequest)
+                if (dimse.Type == DicomCommandField.NActionRequest || dimse.Type == DicomCommandField.NCreateRequest || 
+                    dimse.Type == DicomCommandField.NDeleteRequest || dimse.Type == DicomCommandField.NEventReportRequest || 
+                    dimse.Type == DicomCommandField.NGetRequest || dimse.Type == DicomCommandField.NSetRequest)
                 {
                     if (!(this is IDicomNServiceProvider)) throw new DicomNetworkException("N-Service SCP not implemented");
 
                     DicomResponse response = null;
+
                     if (dimse.Type == DicomCommandField.NActionRequest) response = (this as IDicomNServiceProvider).OnNActionRequest(dimse as DicomNActionRequest);
                     else if (dimse.Type == DicomCommandField.NCreateRequest) response = (this as IDicomNServiceProvider).OnNCreateRequest(dimse as DicomNCreateRequest);
                     else if (dimse.Type == DicomCommandField.NDeleteRequest)
@@ -754,6 +796,7 @@ namespace Dicom.Network
                     SendResponse(response);
                     return;
                 }
+                // ReSharper restore PossibleNullReferenceException
 
                 throw new DicomNetworkException("Operation not implemented");
             }
@@ -763,6 +806,10 @@ namespace Dicom.Network
             }
         }
 
+        /// <summary>
+        /// Sends the pdu.
+        /// </summary>
+        /// <param name="pdu">The pdu.</param>
         protected void SendPDU(PDU pdu)
         {
             // throttle queueing of PDUs to prevent out of memory errors for very large datasets
@@ -774,7 +821,8 @@ namespace Dicom.Network
                     continue;
                 }
 
-                lock (_lock) _pduQueue.Enqueue(pdu);
+                lock (_lock) 
+                    _pduQueue.Enqueue(pdu);
 
                 break;
             }
@@ -785,15 +833,18 @@ namespace Dicom.Network
 
         private void SendNextPDU()
         {
-            if (!_isConnected) return;
+            if (!IsConnected) 
+                return;
 
             PDU pdu;
 
             lock (_lock)
             {
-                if (_writing) return;
+                if (_writing) 
+                    return;
 
-                if (_pduQueue.Count == 0) return;
+                if (_pduQueue.Count == 0) 
+                    return;
 
                 _writing = true;
 
@@ -828,7 +879,8 @@ namespace Dicom.Network
 
         private void OnEndSendPDU(IAsyncResult ar)
         {
-            byte[] buffer = (byte[])ar.AsyncState;
+            // ReSharper disable once UnusedVariable
+            var buffer = (byte[])ar.AsyncState;
 
             try
             {
@@ -847,6 +899,7 @@ namespace Dicom.Network
 
                 CloseConnection(e);
             }
+            // ReSharper disable once EmptyGeneralCatchClause
             catch
             {
             }
@@ -859,7 +912,8 @@ namespace Dicom.Network
 
         private void SendMessage(DicomMessage message)
         {
-            lock (_lock) _msgQueue.Enqueue(message);
+            lock (_lock) 
+                _msgQueue.Enqueue(message);
             SendNextMessage();
         }
 
@@ -882,40 +936,38 @@ namespace Dicom.Network
             {
                 if (_msgQueue.Count == 0)
                 {
-                    if (_pending.Count == 0) OnSendQueueEmpty();
+                    if (_pending.Count == 0) 
+                        OnSendQueueEmpty();
                     return;
                 }
 
-                if (_sending) return;
+                if (_sending) 
+                    return;
 
-                if (Association.MaxAsyncOpsInvoked > 0 && _pending.Count >= Association.MaxAsyncOpsInvoked) return;
+                if (Association.MaxAsyncOpsInvoked > 0 && _pending.Count >= Association.MaxAsyncOpsInvoked) 
+                    return;
 
                 _sending = true;
 
                 msg = _msgQueue.Dequeue();
             }
 
-            if (msg is DicomRequest) _pending.Add(msg as DicomRequest);
+            if (msg is DicomRequest) 
+                _pending.Add(msg as DicomRequest);
 
-            DicomPresentationContext pc = null;
+            DicomPresentationContext pc;
             if (msg is DicomCStoreRequest)
             {
-                pc =
-                    Association.PresentationContexts.FirstOrDefault(
-                        x =>
-                        x.Result == DicomPresentationContextResult.Accept && x.AbstractSyntax == msg.SOPClassUID
-                        && x.AcceptedTransferSyntax == (msg as DicomCStoreRequest).TransferSyntax);
-                if (pc == null)
-                    pc =
-                        Association.PresentationContexts.FirstOrDefault(
-                            x =>
-                            x.Result == DicomPresentationContextResult.Accept && x.AbstractSyntax == msg.SOPClassUID);
+                //pc = Association.PresentationContexts.FirstOrDefault(x => x.Result == DicomPresentationContextResult.Accept && x.AbstractSyntax == msg.SOPClassUID && x.AcceptedTransferSyntax == (msg as DicomCStoreRequest).TransferSyntax);
+                //if (pc == null)
+                //    pc = Association.PresentationContexts.FirstOrDefault(x => x.Result == DicomPresentationContextResult.Accept && x.AbstractSyntax == msg.SOPClassUID);
+                // ReSharper disable once PossibleNullReferenceException
+                pc = Association.PresentationContexts.FirstOrDefault(x => x.Result == DicomPresentationContextResult.Accept && x.AbstractSyntax == msg.SOPClassUID && x.AcceptedTransferSyntax == (msg as DicomCStoreRequest).TransferSyntax) ??
+                     Association.PresentationContexts.FirstOrDefault(x => x.Result == DicomPresentationContextResult.Accept && x.AbstractSyntax == msg.SOPClassUID);
             }
             else
             {
-                pc =
-                    Association.PresentationContexts.FirstOrDefault(
-                        x => x.Result == DicomPresentationContextResult.Accept && x.AbstractSyntax == msg.SOPClassUID);
+                pc = Association.PresentationContexts.FirstOrDefault(x => x.Result == DicomPresentationContextResult.Accept && x.AbstractSyntax == msg.SOPClassUID);
             }
 
             if (pc == null)
@@ -950,21 +1002,23 @@ namespace Dicom.Network
 
                     //TODO: add N services
                 }
+                // ReSharper disable once EmptyGeneralCatchClause
                 catch
                 {
                 }
 
-                Logger.Error(
-                    "No accepted presentation context found for abstract syntax: {sopClassUid}",
-                    msg.SOPClassUID);
-                lock (_lock) _sending = false;
+                Logger.Error("No accepted presentation context found for abstract syntax: {sopClassUid}", msg.SOPClassUID);
+                lock (_lock) 
+                    _sending = false;
                 SendNextMessage();
                 return;
             }
 
-            var dimse = new Dimse();
-            dimse.Message = msg;
-            dimse.PresentationContext = pc;
+            var dimse = new Dimse
+            {
+                Message = msg, 
+                PresentationContext = pc
+            };
 
             // force calculation of command group length as required by standard
             msg.Command.RecalculateGroupLengths();
@@ -978,7 +1032,8 @@ namespace Dicom.Network
                 //	   element values and changes in transfer syntax.
                 msg.Dataset.RemoveGroupLengths();
 
-                if (msg.Dataset.InternalTransferSyntax != dimse.PresentationContext.AcceptedTransferSyntax) msg.Dataset = msg.Dataset.ChangeTransferSyntax(dimse.PresentationContext.AcceptedTransferSyntax);
+                if (msg.Dataset.InternalTransferSyntax != dimse.PresentationContext.AcceptedTransferSyntax) 
+                    msg.Dataset = msg.Dataset.ChangeTransferSyntax(dimse.PresentationContext.AcceptedTransferSyntax);
             }
 
             Logger.Info("{logId} -> {dicomMessage}", LogID, msg.ToString(Options.LogDimseDatasets));
@@ -999,6 +1054,7 @@ namespace Dicom.Network
         private void OnEndSendCommand(IAsyncResult result)
         {
             var dimse = result.AsyncState as Dimse;
+            // ReSharper disable PossibleNullReferenceException
             try
             {
                 dimse.Walker.EndWalk(result);
@@ -1025,11 +1081,13 @@ namespace Dicom.Network
                     SendNextMessage();
                 }
             }
+            // ReSharper restore PossibleNullReferenceException
         }
 
         private void OnEndSendMessage(IAsyncResult result)
         {
             var dimse = result.AsyncState as Dimse;
+            // ReSharper disable PossibleNullReferenceException
             try
             {
                 dimse.Walker.EndWalk(result);
@@ -1046,13 +1104,22 @@ namespace Dicom.Network
                 lock (_lock) _sending = false;
                 SendNextMessage();
             }
+            // ReSharper restore PossibleNullReferenceException
         }
 
+        /// <summary>
+        /// Sends the request.
+        /// </summary>
+        /// <param name="request">The request.</param>
         public void SendRequest(DicomRequest request)
         {
             SendMessage(request);
         }
 
+        /// <summary>
+        /// Sends the response.
+        /// </summary>
+        /// <param name="response">The response.</param>
         protected void SendResponse(DicomResponse response)
         {
             SendMessage(response);
@@ -1104,6 +1171,7 @@ namespace Dicom.Network
 
             public bool IsCommand
             {
+                // ReSharper disable once UnusedMember.Local
                 get
                 {
                     return _command;
@@ -1148,6 +1216,7 @@ namespace Dicom.Network
                 return 6 + _pdu.GetLengthOfPDVs();
             }
 
+            // ReSharper disable once InconsistentNaming
             private void CreatePDV(bool last)
             {
                 try
@@ -1302,6 +1371,10 @@ namespace Dicom.Network
 
         #region Send Methods
 
+        /// <summary>
+        /// Sends the association request.
+        /// </summary>
+        /// <param name="association">The association.</param>
         protected void SendAssociationRequest(DicomAssociation association)
         {
             LogID = association.CalledAE;
@@ -1311,20 +1384,30 @@ namespace Dicom.Network
             SendPDU(new AAssociateRQ(Association));
         }
 
+        /// <summary>
+        /// Sends the association accept.
+        /// </summary>
+        /// <param name="association">The association.</param>
         protected void SendAssociationAccept(DicomAssociation association)
         {
             Association = association;
 
             // reject all presentation contexts that have not already been accepted or rejected
-            foreach (var pc in Association.PresentationContexts)
+            foreach (var pc in Association.PresentationContexts.Where(pc => pc.Result == DicomPresentationContextResult.Proposed))
             {
-                if (pc.Result == DicomPresentationContextResult.Proposed) pc.SetResult(DicomPresentationContextResult.RejectNoReason);
+                pc.SetResult(DicomPresentationContextResult.RejectNoReason);
             }
 
             Logger.Info("{logId} -> Association accept:\n{association}", LogID, association.ToString());
             SendPDU(new AAssociateAC(Association));
         }
 
+        /// <summary>
+        /// Sends the association reject.
+        /// </summary>
+        /// <param name="result">The result.</param>
+        /// <param name="source">The source.</param>
+        /// <param name="reason">The reason.</param>
         protected void SendAssociationReject(
             DicomRejectResult result,
             DicomRejectSource source,
@@ -1339,18 +1422,29 @@ namespace Dicom.Network
             SendPDU(new AAssociateRJ(result, source, reason));
         }
 
+        /// <summary>
+        /// Sends the association release request.
+        /// </summary>
         protected void SendAssociationReleaseRequest()
         {
             Logger.Info("{logId} -> Association release request", LogID);
             SendPDU(new AReleaseRQ());
         }
 
+        /// <summary>
+        /// Sends the association release response.
+        /// </summary>
         protected void SendAssociationReleaseResponse()
         {
             Logger.Info("{logId} -> Association release response", LogID);
             SendPDU(new AReleaseRP());
         }
 
+        /// <summary>
+        /// Sends the abort.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="reason">The reason.</param>
         protected void SendAbort(DicomAbortSource source, DicomAbortReason reason)
         {
             Logger.Info("{logId} -> Abort [source: {source}; reason: {reason}]", LogID, source, reason);
@@ -1361,6 +1455,9 @@ namespace Dicom.Network
 
         #region Override Methods
 
+        /// <summary>
+        /// Called when [send queue empty].
+        /// </summary>
         protected virtual void OnSendQueueEmpty()
         {
         }
