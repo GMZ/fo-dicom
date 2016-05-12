@@ -22,8 +22,11 @@ namespace Dicom.Dump
         {
             try
             {
-                tvReport.BeginUpdate();
-                tvReport.Nodes.Clear();
+                if (tvReport != null)
+                {
+                    tvReport.BeginUpdate();
+                    tvReport.Nodes.Clear();
+                }
 
                 var sr = new DicomStructuredReport(_file.Dataset);
                 var node = tvReport.Nodes.Add(sr.ToString());

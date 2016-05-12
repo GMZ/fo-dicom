@@ -88,7 +88,8 @@ namespace Dicom.Dump
                 new DicomDatasetWalker(_file.FileMetaInfo).Walk(new DumpWalker(this));
                 new DicomDatasetWalker(_file.Dataset).Walk(new DumpWalker(this));
 
-                if (_file.Dataset.Contains(DicomTag.PixelData)) menuItemView.Enabled = true;
+                //if (_file.Dataset.Contains(DicomTag.PixelData)) 
+                    menuItemView.Enabled = true;
                 menuItemSyntax.Enabled = true;
                 menuItemSave.Enabled = true;
 
