@@ -1,7 +1,9 @@
-﻿using System;
+﻿// Copyright (c) 2012-2015 fo-dicom contributors.
+// Licensed under the Microsoft Public License (MS-PL).
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dicom.Log;
 
 namespace Dicom.Printing
 {
@@ -48,14 +50,26 @@ namespace Dicom.Printing
         /// </remarks>
         public string FilmDestination
         {
-            get { return this.Get(DicomTag.FilmDestination, string.Empty); }
-            set { this.Add(DicomTag.FilmDestination, value); }
+            get
+            {
+                return this.Get(DicomTag.FilmDestination, string.Empty);
+            }
+            set
+            {
+                this.Add(DicomTag.FilmDestination, value);
+            }
         }
 
         public string FilmSessionLabel
         {
-            get { return this.Get(DicomTag.FilmSessionLabel, string.Empty); }
-            set { this.Add(DicomTag.FilmSessionLabel, value); }
+            get
+            {
+                return this.Get(DicomTag.FilmSessionLabel, string.Empty);
+            }
+            set
+            {
+                this.Add(DicomTag.FilmSessionLabel, value);
+            }
         }
 
         /// <summary>
@@ -63,16 +77,23 @@ namespace Dicom.Printing
         /// </summary>
         public int MemoryAllocation
         {
-            get { return Get(DicomTag.MemoryAllocation, 0); }
-            set { Add(DicomTag.MemoryAllocation, value); }
+            get
+            {
+                return this.Get(DicomTag.MemoryAllocation, 0);
+            }
+            set
+            {
+                this.Add(DicomTag.MemoryAllocation, value);
+            }
         }
 
-        /// <summary>Identification of the owner of the film session.</summary>
-        public string OwnerId
-        {
-            get { return Get(DicomTag.OwnerID, String.Empty); }
-            set { Add(DicomTag.OwnerID, value); }
-        }
+        /// <summary>Identification of the owner of the film session.</summary> 
+        public string OwnerId 
+        { 
+            get { return Get(DicomTag.OwnerID, String.Empty); } 
+            set { Add(DicomTag.OwnerID, value); } 
+        } 
+
 
         /// <summary>
         /// Type of medium on which the print job will be printed.
@@ -89,8 +110,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string MediumType
         {
-            get { return this.Get(DicomTag.MediumType, string.Empty); }
-            set { this.Add(DicomTag.MediumType, value); }
+            get
+            {
+                return this.Get(DicomTag.MediumType, string.Empty);
+            }
+            set
+            {
+                this.Add(DicomTag.MediumType, value);
+            }
         }
 
         /// <summary>
@@ -106,8 +133,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string PrintPriority
         {
-            get { return this.Get(DicomTag.PrintPriority, string.Empty); }
-            set { this.Add(DicomTag.PrintPriority, value); }
+            get
+            {
+                return this.Get(DicomTag.PrintPriority, string.Empty);
+            }
+            set
+            {
+                this.Add(DicomTag.PrintPriority, value);
+            }
         }
 
         /// <summary>
@@ -115,21 +148,22 @@ namespace Dicom.Printing
         /// </summary>
         public int NumberOfCopies
         {
-            get { return this.Get(DicomTag.NumberOfCopies, 1); }
-            set { this.Add(DicomTag.NumberOfCopies, value); }
+            get
+            {
+                return this.Get(DicomTag.NumberOfCopies, 1);
+            }
+            set
+            {
+                this.Add(DicomTag.NumberOfCopies, value);
+            }
         }
 
         /// <summary>
         /// Basic Film Boxes list
         /// </summary>
         public IList<FilmBox> BasicFilmBoxes { get; private set; }
-        
-        /// <summary>
-        /// Gets the presentation luts.
-        /// </summary>
-        /// <value>
-        /// The presentation luts.
-        /// </value>
+
+
         public IList<PresentationLut> PresentationLuts { get; private set; }
 
         public bool IsColor { get; set; }
@@ -137,6 +171,7 @@ namespace Dicom.Printing
         #endregion
 
         #region Constructors
+
         /// <summary>
         /// Construct new film session from scratch
         /// </summary>
@@ -266,8 +301,12 @@ namespace Dicom.Printing
         {
             DicomUID uid = sopInstance;
             if (uid == null || uid.UID == string.Empty)
-                uid = new DicomUID(string.Format("{0}.{1}", SOPInstanceUID.UID, BasicFilmBoxes.Count + 1),
-                    SOPInstanceUID.Name, SOPInstanceUID.Type);
+            {
+                uid = new DicomUID(
+                    string.Format("{0}.{1}", SOPInstanceUID.UID, BasicFilmBoxes.Count + 1),
+                    SOPInstanceUID.Name,
+                    SOPInstanceUID.Type);
+            }
 
             var presentationLut = new PresentationLut(uid, dataset);
 
@@ -308,7 +347,10 @@ namespace Dicom.Printing
         {
             var file = DicomFile.Open(filmSessionFile);
 
-            var filmSession = new FilmSession(file.FileMetaInfo.MediaStorageSOPClassUID, file.FileMetaInfo.MediaStorageSOPInstanceUID, file.Dataset);
+            var filmSession = new FilmSession(
+                file.FileMetaInfo.MediaStorageSOPClassUID,
+                file.FileMetaInfo.MediaStorageSOPInstanceUID,
+                file.Dataset);
             return filmSession;
         }
 

@@ -1,19 +1,26 @@
-﻿using System;
+﻿// Copyright (c) 2012-2015 fo-dicom contributors.
+// Licensed under the Microsoft Public License (MS-PL).
+
+using System;
 using System.Drawing;
-using System.Drawing.Imaging;
-using Dicom.Imaging;
+
 using Dicom.Log;
 
 namespace Dicom.Printing
 {
+    using System.IO;
+
+    using Dicom.IO;
+
     /// <summary>
     /// Color or gray scale basic image box
     /// </summary>
     public class ImageBox : DicomDataset
     {
         #region Properties and Attributes
+
         //border in 100th of inches
-        protected const float Hundredths = (float)(100 * 2 / 25.4);
+        protected const float BORDER = (float)(100 * 2 / 25.4);
 
         public FilmBox FilmBox { get; private set; }
 
@@ -47,11 +54,11 @@ namespace Dicom.Printing
                 DicomSequence seq = null;
                 if (SOPClassUID == ColorSOPClassUID)
                 {
-                    seq = Get<DicomSequence>(DicomTag.BasicColorImageSequence);
+                    seq = this.Get<DicomSequence>(DicomTag.BasicColorImageSequence);
                 }
                 if (seq == null)
                 {
-                    seq = Get<DicomSequence>(DicomTag.BasicGrayscaleImageSequence);
+                    seq = this.Get<DicomSequence>(DicomTag.BasicGrayscaleImageSequence);
                 }
 
                 if (seq != null && seq.Items.Count > 0)
@@ -63,11 +70,15 @@ namespace Dicom.Printing
             }
             set
             {
-                //DicomSequence seq = null;
-                Add(
-                    SOPClassUID == ColorSOPClassUID
-                        ? DicomTag.BasicColorImageSequence
-                        : DicomTag.BasicGrayscaleImageSequence, value);
+                if (SOPClassUID == ColorSOPClassUID)
+                {
+                    this.Add(DicomTag.BasicColorImageSequence, value);
+                }
+                else
+                {
+                    this.Add(DicomTag.BasicGrayscaleImageSequence, value);
+
+                }
             }
         }
 
@@ -76,8 +87,14 @@ namespace Dicom.Printing
         /// </summary>
         public ushort ImageBoxPosition
         {
-            get { return Get<ushort>(DicomTag.ImageBoxPosition, 1); }
-            set { Add(DicomTag.ImageBoxPosition, value); }
+            get
+            {
+                return this.Get<ushort>(DicomTag.ImageBoxPosition, 1);
+            }
+            set
+            {
+                this.Add(DicomTag.ImageBoxPosition, value);
+            }
         }
 
         /// <summary>
@@ -100,8 +117,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string Polarity
         {
-            get { return Get(DicomTag.Polarity, "NORMAL"); }
-            set { Add(DicomTag.Polarity, value); }
+            get
+            {
+                return this.Get(DicomTag.Polarity, "NORMAL");
+            }
+            set
+            {
+                this.Add(DicomTag.Polarity, value);
+            }
         }
 
         /// <summary>
@@ -119,8 +142,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string MagnificationType
         {
-            get { return Get(DicomTag.MagnificationType, FilmBox.MagnificationType); }
-            set { Add(DicomTag.MagnificationType, value); }
+            get
+            {
+                return this.Get(DicomTag.MagnificationType, FilmBox.MagnificationType);
+            }
+            set
+            {
+                this.Add(DicomTag.MagnificationType, value);
+            }
         }
 
         /// <summary>
@@ -129,8 +158,14 @@ namespace Dicom.Printing
         /// </summary>
         public string SmoothingType
         {
-            get { return Get(DicomTag.SmoothingType, FilmBox.SmoothingType); }
-            set { Add(DicomTag.SmoothingType, value); }
+            get
+            {
+                return this.Get(DicomTag.SmoothingType, FilmBox.SmoothingType);
+            }
+            set
+            {
+                this.Add(DicomTag.SmoothingType, value);
+            }
         }
 
         /// <summary>
@@ -139,8 +174,14 @@ namespace Dicom.Printing
         /// </summary>
         public ushort MaxDensity
         {
-            get { return Get(DicomTag.MaxDensity, FilmBox.MaxDensity); }
-            set { Add(DicomTag.MaxDensity, value); }
+            get
+            {
+                return this.Get<ushort>(DicomTag.MaxDensity, FilmBox.MaxDensity);
+            }
+            set
+            {
+                this.Add(DicomTag.MaxDensity, value);
+            }
         }
 
         /// <summary>
@@ -149,8 +190,14 @@ namespace Dicom.Printing
         /// </summary>
         public ushort MinDensity
         {
-            get { return Get(DicomTag.MinDensity, FilmBox.MinDensity); }
-            set { Add(DicomTag.MinDensity, value); }
+            get
+            {
+                return this.Get<ushort>(DicomTag.MinDensity, FilmBox.MinDensity);
+            }
+            set
+            {
+                this.Add(DicomTag.MinDensity, value);
+            }
         }
 
         /// <summary>
@@ -172,8 +219,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string ConfigurationInformation
         {
-            get { return Get(DicomTag.ConfigurationInformation, FilmBox.ConfigurationInformation); }
-            set { Add(DicomTag.ConfigurationInformation, value); }
+            get
+            {
+                return this.Get(DicomTag.ConfigurationInformation, FilmBox.ConfigurationInformation);
+            }
+            set
+            {
+                this.Add(DicomTag.ConfigurationInformation, value);
+            }
         }
 
         /// <summary>
@@ -182,8 +235,14 @@ namespace Dicom.Printing
         /// </summary>
         public double RequestedImageSize
         {
-            get { return Get(DicomTag.RequestedImageSize, 0.0); }
-            set { Add(DicomTag.RequestedImageSize, value); }
+            get
+            {
+                return this.Get<double>(DicomTag.RequestedImageSize, 0.0);
+            }
+            set
+            {
+                this.Add(DicomTag.RequestedImageSize, value);
+            }
         }
 
         /// <summary>
@@ -216,13 +275,20 @@ namespace Dicom.Printing
         /// </remarks>
         public string RequestedDecimateCropBehavior
         {
-            get { return Get(DicomTag.RequestedDecimateCropBehavior, "DECIMATE"); }
-            set { Add(DicomTag.RequestedDecimateCropBehavior, value); }
+            get
+            {
+                return this.Get(DicomTag.RequestedDecimateCropBehavior, "DECIMATE");
+            }
+            set
+            {
+                this.Add(DicomTag.RequestedDecimateCropBehavior, value);
+            }
         }
 
         #endregion
 
         #region Constructors and Initialization
+
         /// <summary>
         /// Construct new ImageBox for specified filmBox using specified SOP class UID and SOP instance UID
         /// </summary>
@@ -230,8 +296,9 @@ namespace Dicom.Printing
         /// <param name="sopClass"></param>
         /// <param name="sopInstance"></param>
         public ImageBox(FilmBox filmBox, DicomUID sopClass, DicomUID sopInstance)
+            : base()
         {
-            InternalTransferSyntax = DicomTransferSyntax.ExplicitVRLittleEndian;
+            this.InternalTransferSyntax = DicomTransferSyntax.ExplicitVRLittleEndian;
             FilmBox = filmBox;
             SOPClassUID = sopClass;
             if (sopInstance == null || sopInstance.UID == string.Empty)
@@ -243,8 +310,8 @@ namespace Dicom.Printing
                 SOPInstanceUID = sopInstance;
             }
 
-            Add(DicomTag.SOPClassUID, SOPClassUID);
-            Add(DicomTag.SOPInstanceUID, SOPInstanceUID);
+            this.Add(DicomTag.SOPClassUID, SOPClassUID);
+            this.Add(DicomTag.SOPInstanceUID, SOPInstanceUID);
 
         }
 
@@ -252,12 +319,20 @@ namespace Dicom.Printing
         /// Construct new ImageBox cloned from another imagebox
         /// </summary>
         /// <param name="imageBox">The source ImageBox instance to clone</param>
-        /// <param name="filmBox">The film box.</param>
         private ImageBox(ImageBox imageBox, FilmBox filmBox)
             : this(filmBox, imageBox.SOPClassUID, imageBox.SOPInstanceUID)
         {
             imageBox.CopyTo(this);
-            InternalTransferSyntax = imageBox.InternalTransferSyntax;
+            this.InternalTransferSyntax = imageBox.InternalTransferSyntax;
+        }
+
+        /// <summary>
+        /// Clone the current IamgeBox and return new object
+        /// </summary>
+        /// <returns>Cloned ImageBox</returns>
+        public ImageBox Clone(FilmBox filmBox)
+        {
+            return new ImageBox(this, filmBox);
         }
 
         #endregion
@@ -273,7 +348,7 @@ namespace Dicom.Printing
             var imageBox = box;
             if (FilmBox.Trim == "YES")
             {
-                imageBox.Inflate(-Hundredths, -Hundredths);
+                imageBox.Inflate(-BORDER, -BORDER);
             }
 
             if (ImageSequence != null && ImageSequence.Contains(DicomTag.PixelData))
@@ -281,10 +356,10 @@ namespace Dicom.Printing
                 Image bitmap = null;
                 try
                 {
-                    var image = new DicomImage(ImageSequence);
-                    var frame = image.RenderImage();
+                    var image = new Dicom.Imaging.DicomImage(ImageSequence);
+                    var frame = image.RenderImage(0);
 
-                    bitmap = frame;// new Bitmap(frame);
+                    bitmap = frame; // new Bitmap(frame);
                     //frame.Dispose();
 
                     DrawBitmap(graphics, box, bitmap, imageResolution);
@@ -308,7 +383,7 @@ namespace Dicom.Printing
                 RectangleF fillBox = box;
                 if (FilmBox.BorderDensity == "WHITE" && FilmBox.Trim == "YES")
                 {
-                    fillBox.Inflate(-Hundredths, -Hundredths);
+                    fillBox.Inflate(-BORDER, -BORDER);
                 }
                 using (var brush = new SolidBrush(Color.Black))
                 {
@@ -319,22 +394,17 @@ namespace Dicom.Printing
 
         private void DrawBitmap(Graphics graphics, RectangleF box, Image bitmap, int imageResolution)
         {
-            // ReSharper disable PossibleLossOfFraction
             var imageSizeInInch = new SizeF(100 * bitmap.Width / imageResolution, 100 * bitmap.Height / imageResolution);
-            // ReSharper restore PossibleLossOfFraction
             double factor = Math.Min(box.Height / imageSizeInInch.Height, box.Width / imageSizeInInch.Width);
 
             if (factor > 1)
             {
                 var targetSize = new Size
-                {
-                    Width = (int)(imageResolution * box.Width / 100),
-                    Height = (int)(imageResolution * box.Height / 100)
-                };
-                if (Polarity == "REVERSE")
-                {
-                    bitmap = Transform((Bitmap) bitmap);
-                }
+                                     {
+                                         Width = (int)(imageResolution * box.Width / 100),
+                                         Height = (int)(imageResolution * box.Height / 100)
+                                     };
+
 
                 using (var membmp = new Bitmap(targetSize.Width, targetSize.Height))
                 {
@@ -354,17 +424,22 @@ namespace Dicom.Printing
                             }
                         }
 
-                        factor = Math.Min(targetSize.Height / (double)bitmap.Height,
+                        factor = Math.Min(
+                            targetSize.Height / (double)bitmap.Height,
                             targetSize.Width / (double)bitmap.Width);
 
-                        var srcRect = new RectangleF(0, 0, bitmap.Width, bitmap.Height);
-                        var dstRect = new RectangleF
-                        {
-                            X = (float)((targetSize.Width - bitmap.Width * factor) / 2.0f),
-                            Y = (float)((targetSize.Height - bitmap.Height * factor) / 2.0f),
-                            Width = (float)(bitmap.Width * factor),
-                            Height = (float)(bitmap.Height * factor),
-                        };
+                        RectangleF srcRect = new RectangleF(0, 0, bitmap.Width, bitmap.Height);
+                        RectangleF dstRect = new RectangleF
+                                                 {
+                                                     X =
+                                                         (float)
+                                                         ((targetSize.Width - bitmap.Width * factor) / 2.0f),
+                                                     Y =
+                                                         (float)
+                                                         ((targetSize.Height - bitmap.Height * factor) / 2.0f),
+                                                     Width = (float)(bitmap.Width * factor),
+                                                     Height = (float)(bitmap.Height * factor),
+                                                 };
                         memg.DrawImage(bitmap, dstRect, srcRect, GraphicsUnit.Pixel);
                     }
                     graphics.DrawImage(membmp, box.X, box.Y, box.Width, box.Height);
@@ -372,89 +447,65 @@ namespace Dicom.Printing
             }
             else
             {
-                var dstRect = new RectangleF
-                {
-                    X = box.X + (float)(box.Width - imageSizeInInch.Width * factor) / 2.0f,
-                    Y = box.Y + (float)(box.Height - imageSizeInInch.Height * factor) / 2.0f,
-                    Width = (float)(imageSizeInInch.Width * factor),
-                    Height = (float)(imageSizeInInch.Height * factor),
-                };
+                //var bmp = new Bitmap(bitmap);
+                //bmp.SetResolution(imageResolution, imageResolution);
+                RectangleF dstRect = new RectangleF
+                                         {
+                                             X =
+                                                 box.X
+                                                 + (float)(box.Width - imageSizeInInch.Width * factor) / 2.0f,
+                                             Y =
+                                                 box.Y
+                                                 + (float)(box.Height - imageSizeInInch.Height * factor)
+                                                 / 2.0f,
+                                             Width = (float)(imageSizeInInch.Width * factor),
+                                             Height = (float)(imageSizeInInch.Height * factor),
+                                         };
 
                 graphics.DrawImage(bitmap, dstRect);
+                //bmp.Dispose();
             }
 
-        }
-
-        public Bitmap Transform(Bitmap source)
-        {
-            //create a blank bitmap the same size as original
-            var newBitmap = new Bitmap(source.Width, source.Height);
-
-            //get a graphics object from the new image
-            var g = Graphics.FromImage(newBitmap);
-
-            // create the negative color matrix
-            var colorMatrix = new ColorMatrix(new[]
-            {
-                new float[] {-1, 0, 0, 0, 0},
-                new float[] {0, -1, 0, 0, 0},
-                new float[] {0, 0, -1, 0, 0},
-                new float[] {0, 0, 0, 1, 0},
-                new float[] {1, 1, 1, 0, 1}
-            });
-
-            // create some image attributes
-            var attributes = new ImageAttributes();
-
-            attributes.SetColorMatrix(colorMatrix);
-
-            g.DrawImage(source, new Rectangle(0, 0, source.Width, source.Height),
-                        0, 0, source.Width, source.Height, GraphicsUnit.Pixel, attributes);
-
-            //dispose the Graphics object
-            g.Dispose();
-
-            return newBitmap;
-        }
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Clone the current IamgeBox and return new object
-        /// </summary>
-        /// <returns>Cloned ImageBox</returns>
-        public ImageBox Clone(FilmBox filmBox)
-        {
-            return new ImageBox(this, filmBox);
-        }
-
-        public void UpdateImageBox(DicomUID sopClassUid)
-        {
-            SOPClassUID = sopClassUid;
         }
 
         #endregion
 
         #region Load and Save
 
+        /// <summary>
+        /// Load image box for a specified <paramref name="filmBox"/> from a specified file.
+        /// </summary>
+        /// <param name="filmBox">Film box.</param>
+        /// <param name="imageBoxFile">Name of the image box file.</param>
+        /// <returns>Image box for a specified <paramref name="filmBox"/> from a file named <paramref name="imageBoxFile"/>.</returns>
         public static ImageBox Load(FilmBox filmBox, string imageBoxFile)
         {
             var file = DicomFile.Open(imageBoxFile);
 
-            var imageBox = new ImageBox(filmBox, file.FileMetaInfo.MediaStorageSOPClassUID, file.FileMetaInfo.MediaStorageSOPInstanceUID);
+            var imageBox = new ImageBox(
+                filmBox,
+                file.FileMetaInfo.MediaStorageSOPClassUID,
+                file.FileMetaInfo.MediaStorageSOPInstanceUID);
 
             file.Dataset.CopyTo(imageBox);
             return imageBox;
         }
 
+        /// <summary>
+        /// Save the image box contents to file.
+        /// </summary>
+        /// <param name="imageBoxFile">Name of the image box file.</param>
         public void Save(string imageBoxFile)
         {
             var imageBoxDicomFile = imageBoxFile + ".dcm";
             var imageBoxTextFile = imageBoxFile + ".txt";
 
+            using (var stream = IOManager.CreateFileReference(imageBoxTextFile).Create())
+            using (var writer = new StreamWriter(stream))
+            {
+                writer.Write(this.WriteToString());
+            }
 
-            System.IO.File.WriteAllText(imageBoxTextFile, this.WriteToString());
             var file = new DicomFile(this);
             file.Save(imageBoxDicomFile);
         }

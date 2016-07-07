@@ -773,6 +773,10 @@ namespace Dicom.Printing
         private static string GetFieldOfView(DicomDataset currentDataSet)
         {
             var ds = currentDataSet.Get<Double[]>(DicomTag.PixelSpacing);
+            if (ds == null)
+            {
+                return String.Empty;
+            }
             var x = ds[0];
             var y = ds[1];
 

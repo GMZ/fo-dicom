@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) 2012-2015 fo-dicom contributors.
+// Licensed under the Microsoft Public License (MS-PL).
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
@@ -7,6 +10,10 @@ using Dicom.Log;
 
 namespace Dicom.Printing
 {
+    using System.IO;
+
+    using Dicom.IO;
+
     /// <summary>
     /// Basic film box
     /// </summary>
@@ -14,11 +21,16 @@ namespace Dicom.Printing
     {
         #region Properites and Attributes
 
-        private readonly FilmSession _filmSession;
+        private readonly FilmSession _filmSession = null;
+
         public FilmSession FilmSession
         {
-            get { return _filmSession; }
+            get
+            {
+                return _filmSession;
+            }
         }
+
         /// <summary>
         /// Basic film box SOP class UID
         /// </summary>
@@ -89,9 +101,38 @@ namespace Dicom.Printing
         /// </remarks>
         public string ImageDisplayFormat
         {
-            get { return Get<string>(DicomTag.ImageDisplayFormat); }
-            set { Add(DicomTag.ImageDisplayFormat, value); }
+            get
+            {
+                return this.Get<string>(DicomTag.ImageDisplayFormat);
+            }
+            set
+            {
+                this.Add(DicomTag.ImageDisplayFormat, value);
+            }
         }
+
+        /// <summary> 
+        /// Film orientation. 
+        /// </summary> 
+        /// <remarks> 
+        /// Enumerated Values: 
+        /// <list type="bullet"> 
+        /// <item> 
+        ///   <term>PORTRAIT</term> 
+        ///   <description>vertical film position</description> 
+        /// </item> 
+        /// <item> 
+        ///   <term>LANDSCAPE</term> 
+        ///   <description>horizontal film position</description> 
+        /// </item> 
+        /// </list> 
+        /// </remarks> 
+        public string FilmOrientation 
+        { 
+            get { return Get(DicomTag.FilmOrientation, "PORTRAIT"); } 
+            set { Add(DicomTag.FilmOrientation, value); } 
+        } 
+
 
         /// <summary>
         /// Film orientation.
@@ -109,10 +150,16 @@ namespace Dicom.Printing
         /// </item>
         /// </list>
         /// </remarks>
-        public string FilmOrientation
+        public string FilmOrienation
         {
-            get { return Get(DicomTag.FilmOrientation, "PORTRAIT"); }
-            set { Add(DicomTag.FilmOrientation, value); }
+            get
+            {
+                return this.Get<string>(DicomTag.FilmOrientation, "PORTRAIT");
+            }
+            set
+            {
+                this.Add(DicomTag.FilmOrientation, value);
+            }
         }
 
         /// <summary>
@@ -142,8 +189,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string FilmSizeID
         {
-            get { return Get(DicomTag.FilmSizeID, "A4"); }
-            set { Add(DicomTag.FilmSizeID, value); }
+            get
+            {
+                return this.Get<string>(DicomTag.FilmSizeID, "A4");
+            }
+            set
+            {
+                this.Add(DicomTag.FilmSizeID, value);
+            }
         }
 
         /// <summary>
@@ -161,8 +214,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string MagnificationType
         {
-            get { return Get(DicomTag.MagnificationType, "BILINEAR"); }
-            set { Add(DicomTag.MagnificationType, value); }
+            get
+            {
+                return this.Get<string>(DicomTag.MagnificationType, "BILINEAR");
+            }
+            set
+            {
+                this.Add(DicomTag.MagnificationType, value);
+            }
         }
 
         /// <summary>
@@ -171,18 +230,31 @@ namespace Dicom.Printing
         /// </summary>
         public ushort MaxDensity
         {
-            get { return Get<ushort>(DicomTag.MaxDensity); }
-            set { Add(DicomTag.MaxDensity, value); }
+            get
+            {
+                return this.Get<ushort>(DicomTag.MaxDensity, 0);
+            }
+            set
+            {
+                this.Add(DicomTag.MaxDensity, value);
+            }
         }
-        
+
+
         /// <summary>
         /// Minimum density of the images on the film, expressed in hundredths of OD. If Min Density is lower than 
         /// minimum printer density than Min Density is set to minimum printer density.
         /// </summary>
         public ushort MinDensity
         {
-            get { return Get<ushort>(DicomTag.MinDensity); }
-            set { Add(DicomTag.MinDensity, value); }
+            get
+            {
+                return this.Get<ushort>(DicomTag.MinDensity, 0);
+            }
+            set
+            {
+                this.Add(DicomTag.MinDensity, value);
+            }
         }
 
         /// <summary>
@@ -206,8 +278,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string ConfigurationInformation
         {
-            get { return Get(DicomTag.ConfigurationInformation, string.Empty); }
-            set { Add(DicomTag.ConfigurationInformation, value); }
+            get
+            {
+                return this.Get(DicomTag.ConfigurationInformation, string.Empty);
+            }
+            set
+            {
+                this.Add(DicomTag.ConfigurationInformation, value);
+            }
         }
 
         /// <summary>
@@ -217,8 +295,14 @@ namespace Dicom.Printing
         /// </summary>
         public string AnnotationDisplayFormatID
         {
-            get { return Get(DicomTag.AnnotationDisplayFormatID, string.Empty); }
-            set { Add(DicomTag.AnnotationDisplayFormatID, value); }
+            get
+            {
+                return this.Get(DicomTag.AnnotationDisplayFormatID, string.Empty);
+            }
+            set
+            {
+                this.Add(DicomTag.AnnotationDisplayFormatID, value);
+            }
         }
 
         /// <summary>
@@ -227,8 +311,14 @@ namespace Dicom.Printing
         /// </summary>
         public string SmoothingType
         {
-            get { return Get(DicomTag.SmoothingType, string.Empty); }
-            set { Add(DicomTag.SmoothingType, value); }
+            get
+            {
+                return this.Get(DicomTag.SmoothingType, string.Empty);
+            }
+            set
+            {
+                this.Add(DicomTag.SmoothingType, value);
+            }
         }
 
         /// <summary>
@@ -248,10 +338,17 @@ namespace Dicom.Printing
         /// </remarks>
         public string BorderDensity
         {
-            get { return Get(DicomTag.BorderDensity, "BLACK"); }
-            set { Add(DicomTag.BorderDensity, value); }
+            get
+            {
+                return this.Get(DicomTag.BorderDensity, "BLACK");
+            }
+            set
+            {
+                this.Add(DicomTag.BorderDensity, value);
+            }
         }
-        
+
+
         /// <summary>
         /// Density of the image box area on the film that contains no image.
         /// </summary>
@@ -268,8 +365,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string EmptyImageDensity
         {
-            get { return Get(DicomTag.EmptyImageDensity, "BLACK"); }
-            set { Add(DicomTag.EmptyImageDensity, value); }
+            get
+            {
+                return this.Get(DicomTag.EmptyImageDensity, "BLACK");
+            }
+            set
+            {
+                this.Add(DicomTag.EmptyImageDensity, value);
+            }
         }
 
         /// <summary>
@@ -284,8 +387,14 @@ namespace Dicom.Printing
         /// </remarks>
         public string Trim
         {
-            get { return Get(DicomTag.Trim, "NO"); }
-            set { Add(DicomTag.Trim, value); }
+            get
+            {
+                return this.Get(DicomTag.Trim, "NO");
+            }
+            set
+            {
+                this.Add(DicomTag.Trim, value);
+            }
         }
 
         /// <summary>
@@ -295,8 +404,14 @@ namespace Dicom.Printing
         /// </summary>
         public ushort Illumination
         {
-            get { return Get<ushort>(DicomTag.Illumination); }
-            set { Add(DicomTag.Illumination, value); }
+            get
+            {
+                return this.Get<ushort>(DicomTag.Illumination, 0);
+            }
+            set
+            {
+                this.Add(DicomTag.Illumination, value);
+            }
         }
 
         /// <summary>
@@ -305,8 +420,14 @@ namespace Dicom.Printing
         /// </summary>
         public ushort ReflectedAmbientLight
         {
-            get { return Get<ushort>(DicomTag.ReflectedAmbientLight); }
-            set { Add(DicomTag.ReflectedAmbientLight, value); }
+            get
+            {
+                return this.Get<ushort>(DicomTag.ReflectedAmbientLight, 0);
+            }
+            set
+            {
+                this.Add(DicomTag.ReflectedAmbientLight, value);
+            }
         }
 
         /// <summary>
@@ -327,19 +448,25 @@ namespace Dicom.Printing
         /// </remarks>
         public string RequestedResolutionID
         {
-            get { return Get(DicomTag.RequestedResolutionID, "STANDARD"); }
-            set { Add(DicomTag.RequestedResolutionID, value); }
+            get
+            {
+                return this.Get(DicomTag.RequestedResolutionID, "STANDARD");
+            }
+            set
+            {
+                this.Add(DicomTag.RequestedResolutionID, value);
+            }
         }
 
         public DicomSequence ReferencedPresentationLutSequence
         {
             get
             {
-                return Get<DicomSequence>(DicomTag.ReferencedPresentationLUTSequence);
+                return this.Get<DicomSequence>(DicomTag.ReferencedPresentationLUTSequence);
             }
             set
             {
-                Add(value);
+                this.Add(value);
             }
         }
 
@@ -349,24 +476,30 @@ namespace Dicom.Printing
             {
                 if (ReferencedPresentationLutSequence != null && ReferencedPresentationLutSequence.Items.Count > 0)
                 {
-                    var sopInstanceUid = ReferencedPresentationLutSequence.Items[0].Get<DicomUID>(DicomTag.ReferencedSOPInstanceUID);
+                    var sopInstanceUid =
+                        ReferencedPresentationLutSequence.Items[0].Get<DicomUID>(DicomTag.ReferencedSOPInstanceUID);
                     return _filmSession.FindPresentationLut(sopInstanceUid);
                 }
-                return null;
+                else
+                {
+                    return null;
+                }
             }
         }
+
         #endregion
 
         #region Constructors and Initialization
+
         /// <summary>
         /// Create baisc film box for specified film session
         /// </summary>
         /// <param name="filmSession">Film session instance</param>
         /// <param name="sopInstance">Basic film box SOP Instance UID</param>
-        /// <param name="transferSyntax">The transfer syntax.</param>
         public FilmBox(FilmSession filmSession, DicomUID sopInstance, DicomTransferSyntax transferSyntax)
+            : base()
         {
-            InternalTransferSyntax = transferSyntax;
+            this.InternalTransferSyntax = transferSyntax;
             _filmSession = filmSession;
             if (sopInstance == null || sopInstance.UID == string.Empty)
             {
@@ -376,8 +509,8 @@ namespace Dicom.Printing
             {
                 SOPInstanceUID = sopInstance;
             }
-            Add(DicomTag.SOPClassUID, SOPClassUID);
-            Add(DicomTag.SOPInstanceUID, SOPInstanceUID);
+            this.Add(DicomTag.SOPClassUID, SOPClassUID);
+            this.Add(DicomTag.SOPInstanceUID, SOPInstanceUID);
 
 
             BasicImageBoxes = new List<ImageBox>();
@@ -387,7 +520,7 @@ namespace Dicom.Printing
             : this(filmSession, sopInstance, dataset.InternalTransferSyntax)
         {
             dataset.CopyTo(this);
-            InternalTransferSyntax = dataset.InternalTransferSyntax;
+            this.InternalTransferSyntax = dataset.InternalTransferSyntax;
         }
 
         /// <summary>
@@ -410,37 +543,41 @@ namespace Dicom.Printing
         public bool Initialize()
         {
             //initialization
-            Add(new DicomSequence(DicomTag.ReferencedImageBoxSequence));
+            this.Add(new DicomSequence(DicomTag.ReferencedImageBoxSequence));
 
-            if (!Contains(DicomTag.FilmOrientation))
+            if (!this.Contains(DicomTag.FilmOrientation))
             {
-                FilmOrientation = "PORTRAIT";
+                FilmOrienation = "PORTRAIT";
             }
-            if (!Contains(DicomTag.FilmSizeID))
+            if (!this.Contains(DicomTag.FilmSizeID))
             {
                 FilmSizeID = "A4";
             }
-            if (!Contains(DicomTag.MagnificationType))
+            if (!this.Contains(DicomTag.MagnificationType))
             {
                 MagnificationType = "BILINEAR";
             }
-            if (!Contains(DicomTag.MaxDensity))
+            if (!this.Contains(DicomTag.MaxDensity))
             {
                 MaxDensity = 0;
             }
-            if (!Contains(DicomTag.MinDensity))
+            if (!this.Contains(DicomTag.MinDensity))
             {
                 MinDensity = 0;
             }
-            if (!Contains(DicomTag.BorderDensity))
+            if (!this.Contains(DicomTag.BorderDensity))
             {
                 BorderDensity = "BLACK";
             }
-            if (!Contains(DicomTag.Trim))
+            if (!this.Contains(DicomTag.EmptyImageDensity))
+            {
+                EmptyImageDensity = "BLACK";
+            }
+            if (!this.Contains(DicomTag.Trim))
             {
                 Trim = "NO";
             }
-            if (!Contains(DicomTag.RequestedResolutionID))
+            if (!this.Contains(DicomTag.RequestedResolutionID))
             {
                 RequestedResolutionID = "STANDARD";
             }
@@ -449,8 +586,11 @@ namespace Dicom.Printing
             {
                 if (string.IsNullOrEmpty(ImageDisplayFormat))
                 {
+                    //Log.Logger.Error("No display format present in N-CREATE Basic Film Box dataset");
                     return false;
                 }
+
+                //Core.Logger.Info("Applying display format {0} for film box {1}", ImageDisplayFormat, SOPInstanceUID);
 
                 var parts = ImageDisplayFormat.Split('\\');
 
@@ -489,7 +629,6 @@ namespace Dicom.Printing
                     return true;
                 }
             }
-            // ReSharper disable once EmptyGeneralCatchClause
             catch (Exception ex)
             {
                 //Core.Logger.Error("FilmBox.Initialize", ex);
@@ -530,20 +669,19 @@ namespace Dicom.Printing
                 classUid = DicomUID.BasicColorImageBoxSOPClass;
             }
 
-            var sopInstance = new DicomUID(string.Format("{0}.{1}", SOPInstanceUID.UID, BasicImageBoxes.Count + 1), SOPInstanceUID.Name, SOPInstanceUID.Type);
+            DicomUID sopInstance = new DicomUID(
+                string.Format("{0}.{1}", SOPInstanceUID.UID, BasicImageBoxes.Count + 1),
+                SOPInstanceUID.Name,
+                SOPInstanceUID.Type);
 
-            var imageBox = new ImageBox(this, classUid, sopInstance)
-            {
-                ImageBoxPosition = (ushort) (BasicImageBoxes.Count + 1)
-            };
+            var imageBox = new ImageBox(this, classUid, sopInstance);
+            imageBox.ImageBoxPosition = (ushort)(BasicImageBoxes.Count + 1);
 
             BasicImageBoxes.Add(imageBox);
 
-            var item = new DicomDataset
-            {
-                {DicomTag.ReferencedSOPClassUID, classUid},
-                {DicomTag.ReferencedSOPInstanceUID, sopInstance}
-            };
+            var item = new DicomDataset();
+            item.Add(DicomTag.ReferencedSOPClassUID, classUid);
+            item.Add(DicomTag.ReferencedSOPInstanceUID, sopInstance);
 
             var seq = Get<DicomSequence>(DicomTag.ReferencedImageBoxSequence);
             seq.Items.Add(item);
@@ -553,13 +691,13 @@ namespace Dicom.Printing
         {
             return BasicImageBoxes.FirstOrDefault(i => i.SOPClassUID == ImageBox.ColorSOPClassUID) != null;
         }
+
         #endregion
 
         #region Printing Methods
 
         public SizeF GetSizeInInch()
         {
-            // ReSharper disable once InconsistentNaming
             const float CM_PER_INCH = 2.54f;
             var filmSizeId = FilmSizeID;
             if (filmSizeId.Contains("IN"))
@@ -594,26 +732,28 @@ namespace Dicom.Printing
 
         public void Print(Graphics graphics, Rectangle marginBounds, int imageResolution)
         {
-            var parts = ImageDisplayFormat.Split('\\', ',');
+            var parts = this.ImageDisplayFormat.Split('\\', ',');
 
             if (parts.Length > 0)
             {
-                RectangleF[] boxes;
-                switch (parts[0])
+                RectangleF[] boxes = null;
+                if (parts[0] == "STANDARD")
                 {
-                    case "STANDARD":
-                        boxes = PrintStandardFormat(parts, marginBounds);
-                        break;
-                    case "ROW":
-                        boxes = PrintRowFormat(parts, marginBounds);
-                        break;
-                    case "COL":
-                        boxes = PrintColumnFormat(parts, marginBounds);
-                        break;
-                    default:
-                        throw new ArgumentException(string.Format("ImageDisplayFormat {0} invalid", ImageDisplayFormat),
-                            // ReSharper disable once NotResolvedInText
-                            "ImageDisplayFormat");
+                    boxes = PrintStandardFormat(parts, marginBounds);
+                }
+                else if (parts[0] == "ROW")
+                {
+                    boxes = PrintRowFormat(parts, marginBounds);
+                }
+                else if (parts[0] == "COL")
+                {
+                    boxes = PrintColumnFormat(parts, marginBounds);
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        string.Format("ImageDisplayFormat {0} invalid", this.ImageDisplayFormat),
+                        "ImageDisplayFormat");
                 }
 
                 for (int i = 0; i < BasicImageBoxes.Count; i++)
@@ -629,7 +769,7 @@ namespace Dicom.Printing
             {
                 int colsCount = parts.Length - 1;
 
-                var boxSize = new SizeF(marginBounds.Width / colsCount, 0);
+                SizeF boxSize = new SizeF(marginBounds.Width / (float)colsCount, 0);
 
                 var boxes = new List<RectangleF>();
 
@@ -641,29 +781,33 @@ namespace Dicom.Printing
 
                     for (int r = 0; r < rowsCount; r++)
                     {
-                        boxes.Add(new RectangleF
-                        {
-                            X = marginBounds.X + c * boxSize.Width,
-                            Y = marginBounds.Y + r * boxSize.Height,
-                            Width = boxSize.Width,
-                            Height = boxSize.Height
-                        });
+                        boxes.Add(
+                            new RectangleF
+                                {
+                                    X = marginBounds.X + c * boxSize.Width,
+                                    Y = marginBounds.Y + r * boxSize.Height,
+                                    Width = boxSize.Width,
+                                    Height = boxSize.Height
+                                });
                     }
                 }
                 return boxes.ToArray();
             }
-            throw new ArgumentException(string.Format("ImageDisplayFormat {0} invalid", ImageDisplayFormat),
-                // ReSharper disable once NotResolvedInText
-                "ImageDisplayFormat");
+            else
+            {
+                throw new ArgumentException(
+                    string.Format("ImageDisplayFormat {0} invalid", this.ImageDisplayFormat),
+                    "ImageDisplayFormat");
+            }
         }
 
         protected RectangleF[] PrintRowFormat(string[] parts, RectangleF marginBounds)
         {
             if (parts.Length >= 2)
             {
-                var rowsCount = parts.Length - 1;
+                int rowsCount = parts.Length - 1;
 
-                var boxSize = new SizeF(0, marginBounds.Height / rowsCount);
+                SizeF boxSize = new SizeF(0, marginBounds.Height / (float)rowsCount);
 
                 var boxes = new List<RectangleF>();
 
@@ -671,24 +815,28 @@ namespace Dicom.Printing
                 {
                     int colsCount = int.Parse(parts[r + 1]);
 
-                    boxSize.Width = marginBounds.Width / colsCount;
+                    boxSize.Width = marginBounds.Width / (float)colsCount;
 
                     for (int c = 0; c < colsCount; c++)
                     {
-                        boxes.Add(new RectangleF
-                        {
-                            X = marginBounds.X + c * boxSize.Width,
-                            Y = marginBounds.Y + r * boxSize.Height,
-                            Width = boxSize.Width,
-                            Height = boxSize.Height
-                        });
+                        boxes.Add(
+                            new RectangleF
+                                {
+                                    X = marginBounds.X + c * boxSize.Width,
+                                    Y = marginBounds.Y + r * boxSize.Height,
+                                    Width = boxSize.Width,
+                                    Height = boxSize.Height
+                                });
                     }
                 }
                 return boxes.ToArray();
             }
-            throw new ArgumentException(string.Format("ImageDisplayFormat {0} invalid", ImageDisplayFormat),
-                // ReSharper disable once NotResolvedInText
-                "ImageDisplayFormat");
+            else
+            {
+                throw new ArgumentException(
+                    string.Format("ImageDisplayFormat {0} invalid", this.ImageDisplayFormat),
+                    "ImageDisplayFormat");
+            }
         }
 
         protected RectangleF[] PrintStandardFormat(string[] parts, RectangleF marginBounds)
@@ -698,7 +846,7 @@ namespace Dicom.Printing
                 int columns = int.Parse(parts[1]);
                 int rows = int.Parse(parts[2]);
 
-                var boxSize = new SizeF(marginBounds.Width / columns, marginBounds.Height / rows);
+                SizeF boxSize = new SizeF(marginBounds.Width / (float)columns, marginBounds.Height / (float)rows);
 
 
                 var boxes = new List<RectangleF>();
@@ -707,27 +855,36 @@ namespace Dicom.Printing
                     for (int c = 0; c < columns; c++)
                     {
 
-                        boxes.Add(new RectangleF
-                        {
-                            X = marginBounds.X + c * boxSize.Width,
-                            Y = marginBounds.Y + r * boxSize.Height,
-                            Width = boxSize.Width,
-                            Height = boxSize.Height
-                        });
+                        boxes.Add(
+                            new RectangleF
+                                {
+                                    X = marginBounds.X + c * boxSize.Width,
+                                    Y = marginBounds.Y + r * boxSize.Height,
+                                    Width = boxSize.Width,
+                                    Height = boxSize.Height
+                                });
                     }
                 }
 
                 return boxes.ToArray();
             }
-            throw new ArgumentException(string.Format("ImageDisplayFormat {0} invalid", ImageDisplayFormat),
-                // ReSharper disable once NotResolvedInText
-                "ImageDisplayFormat");
+            else
+            {
+                throw new ArgumentException(
+                    string.Format("ImageDisplayFormat {0} invalid", this.ImageDisplayFormat),
+                    "ImageDisplayFormat");
+            }
         }
 
         #endregion
-        
+
+
         #region Load and Save
 
+        /// <summary>
+        /// Save the contents of the film box.
+        /// </summary>
+        /// <param name="filmBoxFolder">Folder in which to save the film box contents.</param>
         public void Save(string filmBoxFolder)
         {
             var filmBoxDicomFile = string.Format(@"{0}\FilmBox.dcm", filmBoxFolder);
@@ -735,30 +892,39 @@ namespace Dicom.Printing
             var file = new DicomFile(this);
             file.Save(filmBoxDicomFile);
 
-
-            System.IO.File.WriteAllText(filmBoxTextFile, this.WriteToString());
-
-            var imageBoxFolderInfo = new System.IO.DirectoryInfo(string.Format(@"{0}\Images", filmBoxFolder));
-            imageBoxFolderInfo.Create();
-            for (int i = 0; i < BasicImageBoxes.Count; i++)
+            using (var stream = IOManager.CreateFileReference(filmBoxTextFile).Create())
+            using (var writer = new StreamWriter(stream))
             {
-                var imageBox = BasicImageBoxes[i];
-                imageBox.Save(string.Format(@"{0}\I{1:000000}", imageBoxFolderInfo.FullName, i + 1));
+                writer.Write(this.WriteToString());
+            }
+
+            var imageBoxFolderInfo = IOManager.CreateDirectoryReference(string.Format(@"{0}\Images", filmBoxFolder));
+            imageBoxFolderInfo.Create();
+            for (int i = 0; i < this.BasicImageBoxes.Count; i++)
+            {
+                var imageBox = this.BasicImageBoxes[i];
+                imageBox.Save(string.Format(@"{0}\I{1:000000}", imageBoxFolderInfo.Name, i + 1));
             }
         }
+
+        /// <summary>
+        /// Load a film box for a specific session from a specific folder.
+        /// </summary>
+        /// <param name="filmSession">Film session.</param>
+        /// <param name="filmBoxFolder">Folder in which film box is stored.</param>
+        /// <returns>Film box for the specified <paramref name="filmSession"/> located in the <paramref name="filmBoxFolder"/>.</returns>
         public static FilmBox Load(FilmSession filmSession, string filmBoxFolder)
         {
             var filmBoxFile = string.Format(@"{0}\FilmBox.dcm", filmBoxFolder);
 
             var file = DicomFile.Open(filmBoxFile);
 
-
             var filmBox = new FilmBox(filmSession, file.FileMetaInfo.MediaStorageSOPInstanceUID, file.Dataset);
 
-            var imagesFolder = new System.IO.DirectoryInfo(string.Format(@"{0}\Images", filmBoxFolder));
-            foreach (var image in imagesFolder.EnumerateFiles("*.dcm"))
+            var imagesFolder = IOManager.CreateDirectoryReference(string.Format(@"{0}\Images", filmBoxFolder));
+            foreach (var image in imagesFolder.EnumerateFileNames("*.dcm"))
             {
-                var imageBox = ImageBox.Load(filmBox, image.FullName);
+                var imageBox = ImageBox.Load(filmBox, image);
 
                 filmBox.BasicImageBoxes.Add(imageBox);
             }

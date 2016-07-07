@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>fo-dicom.MetroLog</id>
+        <version>1.1.1</version>
+        <title>Fellow Oak DICOM MetroLog support</title>
+        <authors>fo-dicom contributors</authors>
+        <licenseUrl>http://opensource.org/licenses/MS-PL</licenseUrl>
+        <projectUrl>https://github.com/GMZ/fo-dicom/tree/Development</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Support library for using MetroLog log handler with fo-dicom.</description>
+        <language>en-US</language>
+        <dependencies>
+            <dependency id="fo-dicom" version="1.1.0" />
+            <dependency id="MetroLog" version="0.8.9" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="..\Logging\DICOM.MetroLog\bin\Release\DICOM.MetroLog.dll" target="lib\net45\DICOM.MetroLog.dll" />
+        <file src="..\Logging\DICOM.MetroLog\bin\Release\DICOM.MetroLog.pdb" target="lib\net45\DICOM.MetroLog.pdb" />
+    </files>
+</package>

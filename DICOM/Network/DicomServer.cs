@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) 2012-2015 fo-dicom contributors.
+// Licensed under the Microsoft Public License (MS-PL).
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -10,101 +13,127 @@ using System.Threading;
 
 using Dicom.Log;
 
-namespace Dicom.Network {
-	public class DicomServer<T> : IDisposable where T: DicomService, IDicomServiceProvider {
-		private X509Certificate _cert;
-		private TcpListener _listener;
-		private List<T> _clients;
-		private Timer _timer;
-		private bool _isDisposing;
+namespace Dicom.Network
+{
+    public class DicomServer<T> : IDisposable
+        where T : DicomService, IDicomServiceProvider
+    {
+        private X509Certificate _cert;
 
-		public DicomServer(int port, string certificateName = null) {
-			_clients = new List<T>();
+        private TcpListener _listener;
 
-			if (certificateName != null) {
-				var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
-				store.Open(OpenFlags.ReadOnly);
+        private List<T> _clients;
 
-				var certs = store.Certificates.Find(X509FindType.FindBySubjectName, certificateName, false);
+        private Timer _timer;
 
-				if (certs.Count == 0)
-					throw new DicomNetworkException("Unable to find certificate for " + certificateName);
+        private object _synchRoot = new object();
 
-				_cert = certs[0];
+        public DicomServer(int port, string certificateName = null)
+        {
+            _clients = new List<T>();
 
-				store.Close();
-			}
+            if (certificateName != null)
+            {
+                var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+                store.Open(OpenFlags.ReadOnly);
 
-			_listener = new TcpListener(IPAddress.Any, port);
-			_listener.Start();
-			_listener.BeginAcceptTcpClient(OnAcceptTcpClient, null);
+                var certs = store.Certificates.Find(X509FindType.FindBySubjectName, certificateName, false);
 
-			_timer = new Timer(OnTimerTick, false, 1000, 1000);
-		}
+                if (certs.Count == 0) throw new DicomNetworkException("Unable to find certificate for " + certificateName);
 
-		public Logger Logger {
-			get;
-			set;
-		}
+                _cert = certs[0];
 
-		/// <summary>
-		/// Options to control behavior of <see cref="DicomService"/> base class.
-		/// </summary>
-		public DicomServiceOptions Options {
-			get;
-			set;
-		}
+                store.Close();
+            }
 
-		private void OnAcceptTcpClient(IAsyncResult result) {
-			try {
-				if (_isDisposing || _listener == null)
-					return;
+            _listener = new TcpListener(IPAddress.Any, port);
+            _listener.Start();
+            _listener.BeginAcceptTcpClient(OnAcceptTcpClient, null);
 
-				var client = _listener.EndAcceptTcpClient(result);
+            _timer = new Timer(OnTimerTick, false, 1000, 1000);
+        }
 
-				if (Options != null)
-					client.NoDelay = Options.TcpNoDelay;
-				else
-					client.NoDelay = DicomServiceOptions.Default.TcpNoDelay;
+        public Logger Logger { get; set; }
 
-				Stream stream = client.GetStream();
+        /// <summary>
+        /// Options to control behavior of <see cref="DicomService"/> base class.
+        /// </summary>
+        public DicomServiceOptions Options { get; set; }
 
-				if (_cert != null) {
-					var ssl = new SslStream(stream, false);
-					ssl.AuthenticateAsServer(_cert, false, SslProtocols.Tls, false);
+        private void OnAcceptTcpClient(IAsyncResult result)
+        {
+            try
+            {
 
-					stream = ssl;
-				}
+                TcpClient client = null;
+                lock (_synchRoot)
+                {
+                    if (_listener == null)
+                    {
+                        return;
+                    }
+                    client = _listener.EndAcceptTcpClient(result);
+                }
 
-				T scp = (T)Activator.CreateInstance(typeof(T), stream, Logger);
 
-				if (Options != null)
-					scp.Options = Options;
 
-				_clients.Add(scp);
-			} catch (Exception e) {
-				if (Logger == null)
-					Logger = LogManager.Default.GetLogger("Dicom.Network");
-				Logger.Error("Exception accepting client: " + e.ToString());
-			} finally {
-				if (!_isDisposing && _listener != null)
-					_listener.BeginAcceptTcpClient(OnAcceptTcpClient, null);
-			}
-		}
+                if (Options != null) client.NoDelay = Options.TcpNoDelay;
+                else client.NoDelay = DicomServiceOptions.Default.TcpNoDelay;
 
-		private void OnTimerTick(object state) {
-			try {
-				for (int i = 0; i < _clients.Count; i++)
-					if (!_clients[i].IsConnected)
-						_clients.RemoveAt(i--);
-			} catch {
-			}
-		}
+                Stream stream = client.GetStream();
 
-		public void Dispose() {
-			_isDisposing = true;
-			_listener.Stop();
-			_listener = null;
-		}
-	}
+                if (_cert != null)
+                {
+                    var ssl = new SslStream(stream, false);
+                    ssl.AuthenticateAsServer(_cert, false, SslProtocols.Tls, false);
+
+                    stream = ssl;
+                }
+
+                T scp = CreateScp(stream);
+
+                if (Options != null) scp.Options = Options;
+
+                _clients.Add(scp);
+            }
+            catch (Exception e)
+            {
+                if (Logger == null) Logger = LogManager.Default.GetLogger("Dicom.Network");
+                Logger.Error("Exception accepting client {@error}", e);
+            }
+            finally
+            {
+                lock (_synchRoot)
+                {
+                    if (_listener != null) _listener.BeginAcceptTcpClient(OnAcceptTcpClient, null);
+
+                }
+            }
+        }
+
+        private void OnTimerTick(object state)
+        {
+            try
+            {
+                for (int i = 0; i < _clients.Count; i++) if (!_clients[i].IsConnected) _clients.RemoveAt(i--);
+            }
+            catch
+            {
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (_synchRoot)
+            {
+                _listener.Stop();
+                _listener = null;
+            }
+        }
+
+        protected virtual T CreateScp(Stream stream)
+        {
+            return (T)Activator.CreateInstance(typeof(T), stream, Logger);
+        }
+    }
 }

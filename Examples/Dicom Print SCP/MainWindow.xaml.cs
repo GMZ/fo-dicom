@@ -41,7 +41,7 @@ namespace Dicom.PrintScp
             };
             SimpleConfigurator.ConfigureForTargetLogging(asyncWrapper, NLog.LogLevel.Debug);
 
-            LogManager.Default = new NLogManager();
+            LogManager.Default = new Dicom.Log.NLogManager();
         }
 
         #endregion // Logging

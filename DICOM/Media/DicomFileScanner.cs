@@ -1,127 +1,174 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) 2012-2015 fo-dicom contributors.
+// Licensed under the Microsoft Public License (MS-PL).
+
+using System;
 using System.IO;
 using System.Threading;
 
-namespace Dicom.Media {
-	public delegate void DicomScanProgressCallback(DicomFileScanner scanner, string directory, int count);
-	public delegate void DicomScanFileFoundCallback(DicomFileScanner scanner, DicomFile file, string fileName);
-	public delegate void DicomScanCompleteCallback(DicomFileScanner scanner);
+namespace Dicom.Media
+{
+    using Dicom.IO;
 
-	public class DicomFileScanner {
-		#region Private Members
-		private string _pattern;
-		private bool _recursive;
-		private bool _stop;
-		private bool _progressOnDirectory;
-		private int _progressAfterCount;
-		private bool _checkForValidHeader;
-		private int _count;
-		#endregion
+    public delegate void DicomScanProgressCallback(DicomFileScanner scanner, string directory, int count);
 
-		#region Public Constructor
-		public DicomFileScanner() {
-			_pattern = null;
-			_recursive = true;
-			_progressOnDirectory = true;
-			_progressAfterCount = 10;
-		}
-		#endregion
+    public delegate void DicomScanFileFoundCallback(DicomFileScanner scanner, DicomFile file, string fileName);
 
-		public event DicomScanProgressCallback Progress;
-		public event DicomScanFileFoundCallback FileFound;
-		public event DicomScanCompleteCallback Complete;
+    public delegate void DicomScanCompleteCallback(DicomFileScanner scanner);
 
-		#region Public Properties
-		public bool ProgressOnDirectoryChange {
-			get { return _progressOnDirectory; }
-			set { _progressOnDirectory = value; }
-		}
+    public class DicomFileScanner
+    {
+        #region Private Members
 
-		public int ProgressFilesCount {
-			get { return _progressAfterCount; }
-			set { _progressAfterCount = value; }
-		}
+        private string _pattern;
 
-		public bool CheckForValidHeader {
-			get { return _checkForValidHeader; }
-			set { _checkForValidHeader = value; }
-		}
-		#endregion
+        private bool _recursive;
 
-		#region Public Methods
-		public void Start(string directory) {
-			_stop = false;
-			_count = 0;
-			new Thread(ScanProc).Start(directory);
-		}
+        private bool _stop;
 
-		public void Stop() {
-			_stop = true;
-		}
-		#endregion
+        private bool _progressOnDirectory;
 
-		#region Private Methods
-		private void ScanProc(object state) {
-			string directory = (string)state;
-			ScanDirectory(directory);
+        private int _progressAfterCount;
 
-			if (Complete != null)
-				Complete(this);
-		}
+        private bool _checkForValidHeader;
 
-		private void ScanDirectory(string directory) {
-			if (_stop)
-				return;
+        private int _count;
 
-			if (Progress != null && _progressOnDirectory)
-				Progress(this, directory, _count);
+        #endregion
 
-			try {
-				string[] files;
-				if (!String.IsNullOrEmpty(_pattern))
-					files = Directory.GetFiles(directory, _pattern);
-				else
-					files = Directory.GetFiles(directory);
+        #region Public Constructor
 
-				foreach (string file in files) {
-					if (_stop)
-						return;
+        public DicomFileScanner()
+        {
+            _pattern = null;
+            _recursive = true;
+            _progressOnDirectory = true;
+            _progressAfterCount = 10;
+        }
 
-					ScanFile(file);
+        #endregion
 
-					_count++;
-					if ((_count % _progressAfterCount) == 0 && Progress != null)
-						Progress(this, directory, _count);
-				}
+        public event DicomScanProgressCallback Progress;
+        public event DicomScanFileFoundCallback FileFound;
+        public event DicomScanCompleteCallback Complete;
 
-				if (!_recursive)
-					return;
+        #region Public Properties
 
-				string[] dirs = Directory.GetDirectories(directory);
-				foreach (string dir in dirs) {
-					if (_stop)
-						return;
+        public bool ProgressOnDirectoryChange
+        {
+            get
+            {
+                return _progressOnDirectory;
+            }
+            set
+            {
+                _progressOnDirectory = value;
+            }
+        }
 
-					ScanDirectory(dir);
-				}
-			} catch {
-			}
-		}
+        public int ProgressFilesCount
+        {
+            get
+            {
+                return _progressAfterCount;
+            }
+            set
+            {
+                _progressAfterCount = value;
+            }
+        }
 
-		private void ScanFile(string file) {
-			try {
-				if (CheckForValidHeader && !DicomFile.HasValidHeader(file))
-					return;
+        public bool CheckForValidHeader
+        {
+            get
+            {
+                return _checkForValidHeader;
+            }
+            set
+            {
+                _checkForValidHeader = value;
+            }
+        }
 
-				var df = DicomFile.Open(file);
+        #endregion
 
-				if (FileFound != null)
-					FileFound(this, df, file);
-			} catch {
-				// ignore exceptions?
-			}
-		}
-		#endregion
-	}
+        #region Public Methods
+
+        public void Start(string directory)
+        {
+            _stop = false;
+            _count = 0;
+            new Thread(ScanProc).Start(directory);
+        }
+
+        public void Stop()
+        {
+            _stop = true;
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private void ScanProc(object state)
+        {
+            string directory = (string)state;
+            ScanDirectory(directory);
+
+            if (Complete != null) Complete(this);
+        }
+
+        private void ScanDirectory(string path)
+        {
+            if (_stop) return;
+
+            if (Progress != null && _progressOnDirectory) Progress(this, path, _count);
+
+            try
+            {
+                var directory = IOManager.CreateDirectoryReference(path);
+                var files = directory.EnumerateFileNames(_pattern);
+
+                foreach (string file in files)
+                {
+                    if (_stop) return;
+
+                    ScanFile(file);
+
+                    _count++;
+                    if ((_count % _progressAfterCount) == 0 && Progress != null) Progress(this, path, _count);
+                }
+
+                if (!_recursive) return;
+
+                var dirs = directory.EnumerateDirectoryNames();
+                foreach (string dir in dirs)
+                {
+                    if (_stop) return;
+
+                    ScanDirectory(dir);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private void ScanFile(string file)
+        {
+            try
+            {
+                if (CheckForValidHeader && !DicomFile.HasValidHeader(file)) return;
+
+                var df = DicomFile.Open(file);
+
+                if (FileFound != null) FileFound(this, df, file);
+            }
+            catch
+            {
+                // ignore exceptions?
+            }
+        }
+
+        #endregion
+    }
 }
