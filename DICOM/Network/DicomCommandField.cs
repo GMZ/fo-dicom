@@ -49,6 +49,8 @@ namespace Dicom.Network
 
         NDeleteResponse = 0x8150,
 
-        CCancelRequest = 0x0FFF
+        CCancelRequest = 0x0FFF,
+
+        CCancelResponse = 0x8FFF 
     }
 }

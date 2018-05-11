@@ -542,6 +542,12 @@ namespace Dicom.Network
                                 case DicomCommandField.NSetResponse:
                                     _dimse = new DicomNSetResponse(command);
                                     break;
+                                case DicomCommandField.CCancelRequest:
+                                    _dimse = new DicomCCancelRequest(command);
+                                    break;
+                                case DicomCommandField.CCancelResponse:
+                                    _dimse = new DicomCCancelResponse(command);
+                                    break;
                                 default:
                                     _dimse = new DicomMessage(command);
                                     break;
@@ -766,6 +772,17 @@ namespace Dicom.Network
                         return;
                     }
                     else throw new DicomNetworkException("C-Echo SCP not implemented");
+                }
+
+                if (dimse.Type == DicomCommandField.CCancelRequest)
+                {
+                    if (this is IDicomCCancelProvider)
+                    {
+                        var responses = (this as IDicomCCancelProvider).OnCCancelRequest(dimse as DicomCCancelRequest);
+                        foreach (var response in responses) SendResponse(response);
+                        return;
+                    }
+                    else throw new DicomNetworkException("C-Cancel SCP not implemented");
                 }
 
                 if (dimse.Type == DicomCommandField.NActionRequest || dimse.Type == DicomCommandField.NCreateRequest || 
@@ -998,6 +1015,12 @@ namespace Dicom.Network
                             this,
                             new DicomCMoveResponse(
                                 msg as DicomCMoveRequest,
+                                DicomStatus.SOPClassNotSupported));
+                    else if (msg is DicomCCancelRequest)
+                        (msg as DicomCCancelRequest).PostResponse(
+                            this,
+                            new DicomCCancelResponse(
+                                msg as DicomCCancelRequest,
                                 DicomStatus.SOPClassNotSupported));
 
                     //TODO: add N services
