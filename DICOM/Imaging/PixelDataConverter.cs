@@ -58,6 +58,14 @@ namespace Dicom.Imaging
             return new MemoryByteBuffer(newPixels);
         }
 
+        private static void Limit(ref int color)
+        {
+            if (color < 0)
+                color = 0;
+            else if (color > 255)
+                color = 255;
+        }
+
         public static IByteBuffer YbrFullToRgb(IByteBuffer data)
         {
             byte[] oldPixels = data.Data;
@@ -72,9 +80,21 @@ namespace Dicom.Imaging
                     b = oldPixels[n + 1];
                     r = oldPixels[n + 2];
 
-                    newPixels[n + 0] = (byte)(y + 1.4020 * (r - 128) + 0.5);
-                    newPixels[n + 1] = (byte)(y - 0.3441 * (b - 128) - 0.7141 * (r - 128) + 0.5);
-                    newPixels[n + 2] = (byte)(y + 1.7720 * (b - 128) + 0.5);
+                    //newPixels[n + 0] = (byte)(y + 1.4020 * (r - 128) + 0.5);
+                    //newPixels[n + 1] = (byte)(y - 0.3441 * (b - 128) - 0.7141 * (r - 128) + 0.5);
+                    //newPixels[n + 2] = (byte)(y + 1.7720 * (b - 128) + 0.5);
+
+                    //new code to limit the upper and lower values.
+                    int red = (int)(y + 1.4020 * (r - 128) + 0.5);
+                    int green = (int)(y - 0.3441 * (b - 128) - 0.7141 * (r - 128) + 0.5);
+                    int blue = (int)(y + 1.7720 * (b - 128) + 0.5);
+                    Limit(ref red);
+                    Limit(ref green);
+                    Limit(ref blue);
+                    newPixels[n + 0] = (byte)red;
+                    newPixels[n + 1] = (byte)green;
+                    newPixels[n + 2] = (byte)blue;
+
                 }
             }
 

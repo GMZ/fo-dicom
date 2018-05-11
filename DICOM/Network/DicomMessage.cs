@@ -195,6 +195,8 @@ namespace Dicom.Network
                     return "N-Set request";
                 case DicomCommandField.NSetResponse:
                     return "N-Set response";
+                case DicomCommandField.CCancelResponse:
+                    return "C-Cancel response";
                 default:
                     return "DIMSE";
             }

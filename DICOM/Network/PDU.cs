@@ -886,7 +886,7 @@ namespace Dicom.Network
         CalledAENotRecognized = 7,
 
         /// <summary>Protocol version not supported (Service provider - ACSE)</summary>
-        ProtocolVersionNotSupported = 1,
+        ProtocolVersionNotSupported = 2, //1 - changed to reflect Table 9-21 of PS 3.8. http://dicom.nema.org/medical/Dicom/current/output/chtml/part08/sect_9.3.4.html,
 
         /// <summary>Temporary congestion (Service provider - Presentation)</summary>
         TemporaryCongestion = 1,
