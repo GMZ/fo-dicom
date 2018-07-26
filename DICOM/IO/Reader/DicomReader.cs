@@ -374,6 +374,17 @@ namespace Dicom.IO.Reader
                             }
                         }
 
+                        if (_vr == DicomVR.CS && _length == UndefinedLength)
+                        {
+                            if (_tag == DicomTag.PatientSexNeutered)
+                            {
+                                _observer.OnElement(source, DicomTag.PatientSexNeutered, DicomVR.CS, EmptyBuffer.Value);
+                            }
+                            source.Skip(4);
+                            _length = source.GetUInt32();
+                            ResetState();
+                            continue;
+                        }
                         if (_length == UndefinedLength)
                         {
                             _observer.OnBeginFragmentSequence(source, _tag, _vr);

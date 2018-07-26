@@ -359,6 +359,10 @@ namespace Dicom.Imaging.Render
             byte[] output = new byte[width * height];
             for (int i = 0, l = width * height; i < l; i++)
             {
+                if (i >= bits.Count)
+                {
+                    break;
+                }
                 output[i] = bits[i] ? One : Zero;
             }
             return output;
