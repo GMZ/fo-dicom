@@ -286,9 +286,7 @@ namespace Dicom.Imaging.Codec
 
         private static void ProcessOverlays(DicomDataset input, DicomDataset output)
         {
-            DicomOverlayData[] overlays = null;
-            if (input.InternalTransferSyntax.IsEncapsulated) overlays = DicomOverlayData.FromDataset(output);
-            else overlays = DicomOverlayData.FromDataset(input);
+            var overlays = DicomOverlayData.FromDataset(input.InternalTransferSyntax.IsEncapsulated ? output : input);
 
             foreach (var overlay in overlays)
             {
@@ -297,8 +295,9 @@ namespace Dicom.Imaging.Codec
                 // don't run conversion on non-embedded overlays
                 if (output.Contains(dataTag)) continue;
 
-                output.Add(new DicomTag(overlay.Group, DicomTag.OverlayBitsAllocated.Element), (ushort)1);
-                output.Add(new DicomTag(overlay.Group, DicomTag.OverlayBitPosition.Element), (ushort)0);
+                var bitsAlloc = output.Get(DicomTag.BitsAllocated, (ushort)0);
+                output.Add(new DicomTag(overlay.Group, DicomTag.OverlayBitsAllocated.Element), bitsAlloc);
+                //output.Add(new DicomTag(overlay.Group, DicomTag.OverlayBitPosition.Element), (ushort)0);
 
                 var data = overlay.Data;
                 if (output.InternalTransferSyntax.IsExplicitVR) output.Add(new DicomOtherByte(dataTag, data));

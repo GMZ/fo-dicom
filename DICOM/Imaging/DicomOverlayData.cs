@@ -92,7 +92,8 @@ namespace Dicom.Imaging
             {
                 var type = Dataset.Get<string>(OverlayTag(DicomTag.OverlayType), "Unknown");
                 if (type.StartsWith("R")) return DicomOverlayType.ROI;
-                else return DicomOverlayType.Graphics;
+                if (type.StartsWith("G")) return DicomOverlayType.Graphics;
+                throw new DicomImagingException("Unsupported overlay type: {0}", type);
             }
             set
             {
@@ -122,7 +123,7 @@ namespace Dicom.Imaging
         {
             get
             {
-                return Dataset.Get<ushort>(OverlayTag(DicomTag.OverlayBitPosition), 0, 1);
+                return Dataset.Get<ushort>(OverlayTag(DicomTag.OverlayBitPosition), 0, 0);
             }
             set
             {
@@ -388,24 +389,27 @@ namespace Dicom.Imaging
                 // (1,1) indicates top left pixel of image
                 int ox = Math.Max(0, OriginX - 1);
                 int oy = Math.Max(0, OriginY - 1);
-                int ow = Rows - (pixels.Width - Rows - ox);
-                int oh = Columns - (pixels.Height - Columns - oy);
+                int ow = Columns;
+                int oh = Rows; 
 
                 var frame = pixels.GetFrame(0);
 
-                var bits = new BitList();
-                bits.Capacity = Rows * Columns;
+                var bits = new BitList { Capacity = Rows * Columns };
                 int mask = 1 << BitPosition;
-
-                if (pixels.BitsAllocated == 8)
+                // Sanity check: do not collect overlay data if Overlay Bit Position is within the used pixel range. (#110)
+                if (BitPosition <= pixels.HighBit && BitPosition > pixels.HighBit - pixels.BitsStored)
+                {
+                    // Do nothing
+                }
+                else if (pixels.BitsAllocated == 8)
                 {
                     var data = IO.ByteConverter.ToArray<byte>(frame);
 
-                    for (int y = oy; y < oh; y++)
+                    for (var y = 0; y < oh; y++)
                     {
-                        int n = (y * pixels.Width) + ox;
-                        int i = (y - oy) * Columns;
-                        for (int x = ox; x < ow; x++)
+                        var n = (y + oy) * pixels.Width + ox;
+                        var i = y * Columns;
+                        for (var x = 0; x < ow; x++)
                         {
                             if ((data[n] & mask) != 0) bits[i] = true;
                             n++;
@@ -418,11 +422,11 @@ namespace Dicom.Imaging
                     // we don't really care if the pixel data is signed or not
                     var data = IO.ByteConverter.ToArray<ushort>(frame);
 
-                    for (int y = oy; y < oh; y++)
+                    for (var y = 0; y < oh; y++)
                     {
-                        int n = (y * pixels.Width) + ox;
-                        int i = (y - oy) * Columns;
-                        for (int x = ox; x < ow; x++)
+                        var n = (y + oy) * pixels.Width + ox;
+                        var i = y * Columns;
+                        for (var x = 0; x < ow; x++)
                         {
                             if ((data[n] & mask) != 0) bits[i] = true;
                             n++;

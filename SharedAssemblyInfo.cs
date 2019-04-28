@@ -9,10 +9,10 @@ using System.Reflection;
 
 [assembly: AssemblyCompanyAttribute("fo-dicom")]
 [assembly: AssemblyProductAttribute("fo-dicom")]
-[assembly: AssemblyCopyrightAttribute("Copyright © fo-dicom contributors 2012-2015")]
+[assembly: AssemblyCopyrightAttribute("Copyright © fo-dicom contributors 2012-2019")]
 [assembly: AssemblyTrademarkAttribute("")]
 [assembly: AssemblyCultureAttribute("")]
 
-[assembly: AssemblyVersionAttribute("1.1.4")]
-[assembly: AssemblyFileVersion("1.1.4.0")]
-[assembly: AssemblyInformationalVersionAttribute("1.1.4")]
+[assembly: AssemblyVersionAttribute("1.1.5")]
+[assembly: AssemblyFileVersion("1.1.5.0")]
+[assembly: AssemblyInformationalVersionAttribute("1.1.5")]

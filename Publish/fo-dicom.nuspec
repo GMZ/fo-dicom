@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>fo-dicom</id>
-    <version>1.1.4</version>
+    <version>1.1.5</version>
     <title>Fellow Oak DICOM for .NET</title>
     <authors>fo-dicom contributors</authors>
     <owners>fo-dicom contributors</owners>
@@ -13,9 +13,9 @@
     <language>en-US</language>
   </metadata>
   <files>
-    <file src="build\net45\Dicom.Native.dll" target="build\net45\Dicom.Native.dll" />
-    <file src="build\net45\Dicom.Native64.dll" target="build\net45\Dicom.Native64.dll" />
-    <file src="build\fo-dicom.targets" target="build\fo-dicom.targets" />
-    <file src="lib\net45\Dicom.dll" target="lib\net45\Dicom.dll" />
+    <file src="..\Distribute\Bin\Dicom.Native.dll" target="build\net45\Dicom.Native.dll" />
+    <file src="..\Distribute\Bin\Dicom.Native64.dll" target="build\net45\Dicom.Native64.dll" />
+    <file src="..\fo-dicom.targets" target="build\fo-dicom.targets" />
+    <file src="..\Distribute\Bin\Dicom.dll" target="lib\net45\Dicom.dll" />
   </files>
 </package>

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Linq;
 using System.Threading.Tasks;
 
 using Dicom.IO.Buffer;
@@ -10,6 +11,7 @@ using Dicom.IO.Buffer;
 using Dicom.Imaging.Algorithms;
 using Dicom.Imaging.LUT;
 using Dicom.Imaging.Mathematics;
+using Dicom.IO;
 
 namespace Dicom.Imaging.Render
 {
@@ -19,26 +21,33 @@ namespace Dicom.Imaging.Render
     public interface IPixelData
     {
         /// <summary>
-        /// Image width (columns) in pixels
+        /// Gets image width (columns) in pixels.
         /// </summary>
         int Width { get; }
 
         /// <summary>
-        /// Image height (rows) in pixels
+        /// Gets image height (rows) in pixels.
         /// </summary>
         int Height { get; }
 
         /// <summary>
-        /// Number for pixel comopnents (normally 1 for grayscale, 1 for palette, and 3 for RGB and YBR
+        /// Gets number of pixel components (normally 1 for grayscale, 1 for palette, and 3 for RGB and YBR).
         /// </summary>
         int Components { get; }
 
         /// <summary>
-        /// return the minimum and maximum pixel values from pixel data
+        /// Return the minimum and maximum pixel values from pixel data.
+        /// The padding value is taken into account.
         /// </summary>
-        /// <param name="padding"></param>
-        /// <returns>Range of claculated minimum and max</returns>
+        /// <param name="padding">Padding value to ignore in min-max determination.</param>
+        /// <returns>Range of calculated minimum and maximum values.</returns>
         DicomRange<double> GetMinMax(int padding);
+
+        /// <summary>
+        /// Return the minimum and maximum pixel values from pixel data.
+        /// </summary>
+        /// <returns>Range of calculated minimum and maximum values.</returns>
+        DicomRange<double> GetMinMax();
 
         /// <summary>
         /// Gets the value of the pixel at the specified coordinates.
@@ -48,6 +57,11 @@ namespace Dicom.Imaging.Render
         /// <returns>Pixel value</returns>
         double GetPixel(int x, int y);
 
+        /// <summary>
+        /// Gets a rescaled copy of the pixel data.
+        /// </summary>
+        /// <param name="scale">Copy scale.</param>
+        /// <returns>Rescaled copy of the pixel data.</returns>
         IPixelData Rescale(double scale);
 
         /// <summary>
@@ -57,6 +71,11 @@ namespace Dicom.Imaging.Render
         /// <param name="output">The output array to store the result in</param>
         void Render(ILUT lut, int[] output);
 
+        /// <summary>
+        /// Gets a histogram of the pixel data for a given <paramref name="channel"/>.
+        /// </summary>
+        /// <param name="channel">The channel for which the histogram is requested.</param>
+        /// <returns>Histogram of the pixel data for the given <paramref name="channel"/>.</returns>
         Histogram GetHistogram(int channel);
     }
 
@@ -75,7 +94,7 @@ namespace Dicom.Imaging.Render
         /// <returns>Implementation of <seealso cref="IPixelData"/> according to <seealso cref="PhotometricInterpretation"/></returns>
         public static IPixelData Create(DicomPixelData pixelData, int frame)
         {
-            PhotometricInterpretation pi = pixelData.PhotometricInterpretation;
+            var pi = pixelData.PhotometricInterpretation;
 
             if (pi == null)
             {
@@ -83,8 +102,9 @@ namespace Dicom.Imaging.Render
                 var samples = pixelData.SamplesPerPixel;
                 if (samples == 0 || samples == 1)
                 {
-                    if (pixelData.Dataset.Contains(DicomTag.RedPaletteColorLookupTableData)) pi = PhotometricInterpretation.PaletteColor;
-                    else pi = PhotometricInterpretation.Monochrome2;
+                    pi = pixelData.Dataset.Contains(DicomTag.RedPaletteColorLookupTableData)
+                        ? PhotometricInterpretation.PaletteColor
+                        : PhotometricInterpretation.Monochrome2;
                 }
                 else
                 {
@@ -95,7 +115,7 @@ namespace Dicom.Imaging.Render
 
             if (pixelData.BitsStored == 1)
             {
-                if (pixelData.Dataset.Get<DicomUID>(DicomTag.SOPClassUID)
+                if (pixelData.Dataset.Get/*SingleValue*/<DicomUID>(DicomTag.SOPClassUID)
                     == DicomUID.MultiFrameSingleBitSecondaryCaptureImageStorage)
                     // Multi-frame Single Bit Secondary Capture is stored LSB -> MSB
                     return new SingleBitPixelData(
@@ -109,7 +129,9 @@ namespace Dicom.Imaging.Render
             else if (pi == PhotometricInterpretation.Monochrome1 || pi == PhotometricInterpretation.Monochrome2
                      || pi == PhotometricInterpretation.PaletteColor)
             {
-                if (pixelData.BitsAllocated <= 8) return new GrayscalePixelDataU8(pixelData.Width, pixelData.Height, pixelData.GetFrame(frame));
+                //if (pixelData.BitsAllocated <= 8)
+                if (pixelData.BitsAllocated == 8 && pixelData.HighBit == 7 && pixelData.BitsStored == 8)
+                    return new GrayscalePixelDataU8(pixelData.Width, pixelData.Height, pixelData.GetFrame(frame));
                 else if (pixelData.BitsAllocated <= 16)
                 {
                     if (pixelData.PixelRepresentation == PixelRepresentation.Signed)
@@ -153,8 +175,8 @@ namespace Dicom.Imaging.Render
                 if (pixelData.PlanarConfiguration == PlanarConfiguration.Planar) buffer = PixelDataConverter.PlanarToInterleaved24(buffer);
 
                 if (pi == PhotometricInterpretation.YbrFull) buffer = PixelDataConverter.YbrFullToRgb(buffer);
-                else if (pi == PhotometricInterpretation.YbrFull422) buffer = PixelDataConverter.YbrFullToRgb(buffer);
-                else if (pi == PhotometricInterpretation.YbrPartial422) buffer = PixelDataConverter.YbrPartial422ToRgb(buffer);
+                else if (pi == PhotometricInterpretation.YbrFull422) buffer = PixelDataConverter.YbrFull422ToRgb(buffer, pixelData.Width);
+                else if (pi == PhotometricInterpretation.YbrPartial422) buffer = PixelDataConverter.YbrPartial422ToRgb(buffer, pixelData.Width);
 
                 return new ColorPixelData24(pixelData.Width, pixelData.Height, buffer);
             }
@@ -190,52 +212,45 @@ namespace Dicom.Imaging.Render
     public class GrayscalePixelDataU8 : IPixelData
     {
         #region Private Members
-
-        private int _width;
-
-        private int _height;
-
-        private readonly byte[] _data;
  
         #endregion
 
         #region Public Constructor
 
+        /// <summary>
+        /// Initializes an instance of the <see cref="GrayscalePixelDataU8"/> class.
+        /// </summary>
+        /// <param name="width">Pixel data width.</param>
+        /// <param name="height">Pixel data height.</param>
+        /// <param name="data">Byte buffer of data.</param>
         public GrayscalePixelDataU8(int width, int height, IByteBuffer data)
         {
-            _width = width;
-            _height = height;
-            _data = data.Data;
+            Width = width;
+            Height = height;
+            Data = data.Data;
         }
 
-        protected GrayscalePixelDataU8(int width, int height, byte[] data)
+        /// <summary>
+        /// Initializes an instance of the <see cref="GrayscalePixelDataU8"/> class.
+        /// </summary>
+        /// <param name="width">Pixel data width.</param>
+        /// <param name="height">Pixel data height.</param>
+        /// <param name="data">Data byte array.</param>
+        protected internal GrayscalePixelDataU8(int width, int height, byte[] data)
         {
-            _width = width;
-            _height = height;
-            _data = data;
+            Width = width;
+            Height = height;
+            Data = data;
         }
-
 
         #endregion
 
         #region Public Properties
 
-        public int Width
-        {
-            get
-            {
-                return _width;
-            }
-        }
+        public int Width { get; set; }
 
-        public int Height
-        {
-            get
-            {
-                return _height;
-            }
-        }
-
+        public int Height { get; set; }
+        
         public int Components
         {
             get
@@ -244,13 +259,7 @@ namespace Dicom.Imaging.Render
             }
         }
 
-        public byte[] Data
-        {
-            get
-            {
-                return _data;
-            }
-        }
+        public byte[] Data { get; set; }
 
         #endregion
 
@@ -258,32 +267,41 @@ namespace Dicom.Imaging.Render
 
         public DicomRange<double> GetMinMax(int padding)
         {
-            var min = Double.MaxValue;
-            var max = Double.MinValue;
-
-            var data = Data;
-            for (int i = 0; i < data.Length; i++)
+            if (Data == null || Data.Length == 0)
             {
-                if (data[i] == padding) continue;
-                else if (data[i] > max) max = data[i];
-                else if (data[i] < min) min = data[i];
+                return default(DicomRange<double>);
             }
 
-            return new DicomRange<double>(min, max);
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Where(v => v != padding).Each(v => range.Join(v));
+            return range;
+        }
+
+        public DicomRange<double> GetMinMax()
+        {
+            if (Data == null || Data.Length == 0)
+            {
+                return default(DicomRange<double>);
+            }
+
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Each(v => range.Join(v));
+            return range;
         }
 
         public double GetPixel(int x, int y)
         {
             var data = Data;
-            return (double)data[(y * Width) + x];
+            return data[y * Width + x];
         }
 
-        public IPixelData Rescale(double scale)
+        public virtual IPixelData Rescale(double scale)
         {
-            if (scale == 1.0) return this;
-            int w = (int)(Width * scale);
-            int h = (int)(Height * scale);
-            byte[] data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
+            var w = (int) (Width * scale);
+            var h = (int) (Height * scale);
+            if (w == Width && h == Height) return this;
+
+            var data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
             return new GrayscalePixelDataU8(w, h, data);
         }
 
@@ -292,10 +310,7 @@ namespace Dicom.Imaging.Render
             var data = Data;
             if (lut == null)
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -305,10 +320,7 @@ namespace Dicom.Imaging.Render
             }
             else
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -322,10 +334,10 @@ namespace Dicom.Imaging.Render
         {
             if (channel != 0) throw new ArgumentOutOfRangeException("channel", channel, "Expected channel 0 for grayscale image.");
 
-            var histogram = new Histogram(Byte.MinValue, Byte.MaxValue);
+            var histogram = new Histogram(byte.MinValue, byte.MaxValue);
 
             var data = Data;
-            for (int i = 0; i < data.Length; i++) histogram.Add(data[i]);
+            for (var i = 0; i < data.Length; i++) histogram.Add(data[i]);
 
             return histogram;
         }
@@ -340,6 +352,12 @@ namespace Dicom.Imaging.Render
     {
         #region Public Constructor
 
+        /// <summary>
+        /// Initializes an instance of the <see cref="SingleBitPixelData"/> class.
+        /// </summary>
+        /// <param name="width">Pixel data width.</param>
+        /// <param name="height">Pixel data height.</param>
+        /// <param name="data">Byte data buffer.</param>
         public SingleBitPixelData(int width, int height, IByteBuffer data)
             : base(width, height, ExpandBits(width, height, data.Data))
         {
@@ -355,14 +373,14 @@ namespace Dicom.Imaging.Render
 
         private static byte[] ExpandBits(int width, int height, byte[] input)
         {
-            BitArray bits = new BitArray(input);
-            byte[] output = new byte[width * height];
+            var bits = new BitArray(input);
+            var output = new byte[width * height];
             for (int i = 0, l = width * height; i < l; i++)
             {
-                if (i >= bits.Count)
+                /*if (i >= bits.Count)
                 {
                     break;
-                }
+                }*/
                 output[i] = bits[i] ? One : Zero;
             }
             return output;
@@ -372,6 +390,17 @@ namespace Dicom.Imaging.Render
 
         #region Public Methods
 
+        /// <inheritdoc />
+        public override IPixelData Rescale(double scale)
+        {
+            var w = (int)(Width * scale);
+            var h = (int)(Height * scale);
+            if (w == Width && h == Height) return this;
+
+            var data = NearestNeighborInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
+            return new GrayscalePixelDataU8(w, h, data);
+        }
+
         public override Histogram GetHistogram(int channel)
         {
             if (channel != 0) throw new ArgumentOutOfRangeException("channel", channel, "Expected channel 0 for grayscale image.");
@@ -379,7 +408,7 @@ namespace Dicom.Imaging.Render
             var histogram = new Histogram(0, 1);
 
             var data = Data;
-            for (int i = 0; i < data.Length; i++) histogram.Add(data[i]);
+            for (var i = 0; i < data.Length; i++) histogram.Add(data[i]);
 
             return histogram;
         }
@@ -395,73 +424,70 @@ namespace Dicom.Imaging.Render
         #region Private Members
 
         private BitDepth _bits;
-
-        private int _width;
-
-        private int _height;
-
-        private readonly short[] _data;
  
         #endregion
 
         #region Public Constructor
 
+        /// <summary>
+        /// Initializes an instance of the <see cref="GrayscalePixelDataS16"/> class.
+        /// </summary>
+        /// <param name="width">Pixel data width.</param>
+        /// <param name="height">Pixel data height.</param>
+        /// <param name="bitDepth">Bit depth of pixel data.</param>
+        /// <param name="data">Byte data buffer.</param>
         public GrayscalePixelDataS16(int width, int height, BitDepth bitDepth, IByteBuffer data)
         {
             _bits = bitDepth;
-            _width = width;
-            _height = height;
+            Width = width;
+            Height = height;
 
-            var shortData = Dicom.IO.ByteConverter.ToArray<short>(data);
+            var shortData = ByteConverter.ToArray<short>(data, bitDepth.BitsAllocated);
 
             if (bitDepth.BitsStored != 16)
             {
-                int sign = 1 << bitDepth.HighBit;
-                int mask = (UInt16.MaxValue >> (bitDepth.BitsAllocated - bitDepth.BitsStored));
+                // Normally, HighBit == BitsStored-1, and thus shiftLeft == shiftRight, and the two
+                // shifts in the loop below just replaces the top shift bits by the sign bit.
+                // Separating shiftLeft from shiftRight handles exotic cases where low-order bits
+                // should also be discarded.
+                var shiftLeft = bitDepth.BitsAllocated - bitDepth.HighBit - 1;
+                var shiftRight = bitDepth.BitsAllocated - bitDepth.BitsStored;
 
-                Parallel.For(
-                    0,
-                    _height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
-                            for (int i = _width * y, e = i + _width; i < e; i++)
+                            for (int i = Width * y, e = i + Width; i < e; i++)
                             {
-                                short d = shortData[i];
-                                if ((d & sign) != 0) shortData[i] = (short)-(((-d) & mask) + 1);
-                                else shortData[i] = (short)(d & mask);
+                                // Remove masked high and low bits by shifting them out of the data type,
+                                // getting the sign correct using arithmetic (sign-extending) right shift.
+                                var d = (short)(shortData[i] << shiftLeft);
+                                shortData[i] = (short)(d >> shiftRight);
                             }
                         });
             }
 
-            _data = shortData;
+            Data = shortData;
         }
 
+        /// <summary>
+        /// Initializes an instance of the <see cref="GrayscalePixelDataU32"/> class.
+        /// </summary>
+        /// <param name="width">Pixel data width.</param>
+        /// <param name="height">Pixel data height.</param>
+        /// <param name="data">Pixel data in internal data format.</param>
         private GrayscalePixelDataS16(int width, int height, short[] data)
         {
-            _width = width;
-            _height = height;
-            _data = data;
+            Width = width;
+            Height = height;
+            Data = data;
         }
 
         #endregion
 
         #region Public Properties
 
-        public int Width
-        {
-            get
-            {
-                return _width;
-            }
-        }
+        public int Width { get; set; }
 
-        public int Height
-        {
-            get
-            {
-                return _height;
-            }
-        }
+        public int Height { get; set; }
 
         public int Components
         {
@@ -471,13 +497,7 @@ namespace Dicom.Imaging.Render
             }
         }
 
-        public short[] Data
-        {
-            get
-            {
-                return _data;
-            }
-        }
+        public short[] Data { get; set; }
 
         #endregion
 
@@ -485,33 +505,41 @@ namespace Dicom.Imaging.Render
 
         public DicomRange<double> GetMinMax(int padding)
         {
-            var min = Double.MaxValue;
-            var max = Double.MinValue;
-
-            var data = Data;
-            for (int i = 0; i < data.Length; i++)
+            if (Data == null || Data.Length == 0)
             {
-                if (data[i] == padding) continue;
-                else if (data[i] > max) max = data[i];
-                else if (data[i] < min) min = data[i];
+                return default(DicomRange<double>);
             }
 
-            return new DicomRange<double>(min, max);
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Where(v => v != padding).Each(v => range.Join(v));
+            return range;
+        }
+
+        public DicomRange<double> GetMinMax()
+        {
+            if (Data == null || Data.Length == 0)
+            {
+                return default(DicomRange<double>);
+            }
+
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Each(v => range.Join(v));
+            return range;
         }
 
         public double GetPixel(int x, int y)
         {
             var data = Data;
-            return (double)data[(y * Width) + x];
+            return data[y * Width + x];
         }
 
         public IPixelData Rescale(double scale)
         {
-            if (scale == 1.0) return this;
-            int w = (int)(Width * scale);
-            int h = (int)(Height * scale);
+            var w = (int)(Width * scale);
+            var h = (int)(Height * scale);
+            if (w == Width && h == Height) return this;
 
-            short[] data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
+            var data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
             return new GrayscalePixelDataS16(w, h, data);
         }
 
@@ -521,10 +549,7 @@ namespace Dicom.Imaging.Render
             if (lut == null)
             {
 
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -534,10 +559,7 @@ namespace Dicom.Imaging.Render
             }
             else
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -555,7 +577,7 @@ namespace Dicom.Imaging.Render
 
             var data = Data;
 
-            for (int i = 0; i < data.Length; i++) histogram.Add(data[i]);
+            for (var i = 0; i < data.Length; i++) histogram.Add(data[i]);
 
             return histogram;
         }
@@ -572,12 +594,6 @@ namespace Dicom.Imaging.Render
 
         private BitDepth _bits;
 
-        private int _width;
-
-        private int _height;
-
-        private readonly ushort[] _data;
-
         #endregion
 
         #region Public Constructor
@@ -585,56 +601,48 @@ namespace Dicom.Imaging.Render
         public GrayscalePixelDataU16(int width, int height, BitDepth bitDepth, IByteBuffer data)
         {
             _bits = bitDepth;
-            _width = width;
-            _height = height;
+            Width = width;
+            Height = height;
 
-            var ushortData = Dicom.IO.ByteConverter.ToArray<ushort>(data);
+            var ushortData = ByteConverter.ToArray<ushort>(data, bitDepth.BitsAllocated);
 
             if (bitDepth.BitsStored != 16)
             {
-                int mask = (1 << (bitDepth.HighBit + 1)) - 1;
+                // Normally, HighBit == BitsStored-1, and thus shiftLeft == shiftRight, and the two
+                // shifts in the loop below just zeroes the top shift bits.
+                // Separating shiftLeft from shiftRight handles exotic cases where low-order bits
+                // should also be discarded.
+                var shiftLeft = bitDepth.BitsAllocated - bitDepth.HighBit - 1;
+                var shiftRight = bitDepth.BitsAllocated - bitDepth.BitsStored;
 
-                Parallel.For(
-                    0,
-                    _height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
-                            for (int i = _width * y, e = i + _width; i < e; i++)
+                            for (int i = Width * y, e = i + Width; i < e; i++)
                             {
-                                ushortData[i] = (ushort)(ushortData[i] & mask);
+                                // Remove masked high and low bits by shifting them out of the data type. 
+                                var d = (ushort)(ushortData[i] << shiftLeft);
+                                ushortData[i] = (ushort)(d >> shiftRight);
                             }
                         });
             }
 
-            _data = ushortData;
+            Data = ushortData;
         }
 
         private GrayscalePixelDataU16(int width, int height, ushort[] data)
         {
-            _width = width;
-            _height = height;
-            _data = data;
+            Width = width;
+            Height = height;
+            Data = data;
         }
 
         #endregion
 
         #region Public Properties
 
-        public int Width
-        {
-            get
-            {
-                return _width;
-            }
-        }
+        public int Width { get; set; }
 
-        public int Height
-        {
-            get
-            {
-                return _height;
-            }
-        }
+        public int Height { get; set; }
 
         public int Components
         {
@@ -644,13 +652,7 @@ namespace Dicom.Imaging.Render
             }
         }
 
-        public ushort[] Data
-        {
-            get
-            {
-                return _data;
-            }
-        }
+        public ushort[] Data { get; set; }
 
         #endregion
 
@@ -658,34 +660,41 @@ namespace Dicom.Imaging.Render
 
         public DicomRange<double> GetMinMax(int padding)
         {
-            var min = Double.MaxValue;
-            var max = Double.MinValue;
-
-            var data = Data;
-            for (int i = 0; i < data.Length; i++)
+            if (Data == null || Data.Length == 0)
             {
-                if (data[i] == padding) continue;
-                else if (data[i] > max) max = data[i];
-                else if (data[i] < min) min = data[i];
+                return default(DicomRange<double>);
             }
 
-            return new DicomRange<double>(min, max);
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Where(v => v != padding).Each(v => range.Join(v));
+            return range;
+        }
+
+        public DicomRange<double> GetMinMax()
+        {
+            if (Data == null || Data.Length == 0)
+            {
+                return default(DicomRange<double>);
+            }
+
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Each(v => range.Join(v));
+            return range;
         }
 
         public double GetPixel(int x, int y)
         {
             var data = Data;
-            return (double)data[(y * Width) + x];
+            return data[y * Width + x];
         }
 
         public IPixelData Rescale(double scale)
         {
-            if (scale == 1.0) return this;
+            var w = (int)(Width * scale);
+            var h = (int)(Height * scale);
+            if (w == Width && h == Height) return this;
 
-
-            int w = (int)(Width * scale);
-            int h = (int)(Height * scale);
-            ushort[] data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
+            var data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
             return new GrayscalePixelDataU16(w, h, data);
         }
 
@@ -694,10 +703,7 @@ namespace Dicom.Imaging.Render
             var data = Data;
             if (lut == null)
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -707,10 +713,7 @@ namespace Dicom.Imaging.Render
             }
             else
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -727,7 +730,7 @@ namespace Dicom.Imaging.Render
             var histogram = new Histogram(_bits.MinimumValue, _bits.MaximumValue);
 
             var data = Data;
-            for (int i = 0; i < data.Length; i++) histogram.Add(data[i]);
+            for (var i = 0; i < data.Length; i++) histogram.Add(data[i]);
 
             return histogram;
         }
@@ -742,68 +745,52 @@ namespace Dicom.Imaging.Render
     {
         #region Private Members
 
-        private int _width;
-
-        private int _height;
-
-        private int[] _data; 
-
         #endregion
 
         #region Public Constructor
 
         public GrayscalePixelDataS32(int width, int height, BitDepth bitDepth, IByteBuffer data)
         {
-            _width = width;
-            _height = height;
+            Width = width;
+            Height = height;
 
-            var intData = Dicom.IO.ByteConverter.ToArray<int>(data);
+            var intData = ByteConverter.ToArray<int>(data, bitDepth.BitsAllocated);
 
-            int sign = 1 << bitDepth.HighBit;
-            uint mask = (UInt32.MaxValue >> (bitDepth.BitsAllocated - bitDepth.BitsStored));
+            // Normally, HighBit == BitsStored-1, and thus shiftLeft == shiftRight, and the two
+            // shifts in the loop below just replaces the top shift bits by the sign bit.
+            // Separating shiftLeft from shiftRight handles exotic cases where low-order bits
+            // should also be discarded.
+            int shiftLeft = bitDepth.BitsAllocated - bitDepth.HighBit - 1;
+            int shiftRight = bitDepth.BitsAllocated - bitDepth.BitsStored;
 
-            Parallel.For(
-                0,
-                _height,
-                y =>
+            Parallel.For(0, Height, y =>
                     {
-                        for (int i = _width * y, e = i + _width; i < e; i++)
+                        for (int i = Width * y, e = i + Width; i < e; i++)
                         {
-                            int d = intData[i];
-                            if ((d & sign) != 0) intData[i] = (int)-(((-d) & mask) + 1);
-                            else intData[i] = (int)(d & mask);
+                            // Remove masked high and low bits by shifting them out of the data type,
+                            // getting the sign correct using arithmetic (sign-extending) right shift.
+                            var d = intData[i] << shiftLeft;
+                            intData[i] = d >> shiftRight;
                         }
                     });
 
-            _data = intData;
+            Data = intData;
         }
 
         private GrayscalePixelDataS32(int width, int height, int[] data)
         {
-            _width = width;
-            _height = height;
-            _data = data;
+            Width = width;
+            Height = height;
+            Data = data;
         }
 
         #endregion
 
         #region Public Properties
 
-        public int Width
-        {
-            get
-            {
-                return _width;
-            }
-        }
+        public int Width { get; set; }
 
-        public int Height
-        {
-            get
-            {
-                return _height;
-            }
-        }
+        public int Height { get; set; }
 
         public int Components
         {
@@ -813,13 +800,7 @@ namespace Dicom.Imaging.Render
             }
         }
 
-        public int[] Data
-        {
-            get
-            {
-                return _data;
-            }
-        }
+        public int[] Data { get; set; }
 
         #endregion
 
@@ -827,30 +808,40 @@ namespace Dicom.Imaging.Render
 
         public DicomRange<double> GetMinMax(int padding)
         {
-            var min = Double.MaxValue;
-            var max = Double.MinValue;
-
-            var data = Data;
-            for (int i = 0; i < data.Length; i++)
+            if (Data == null || Data.Length == 0)
             {
-                if (data[i] > max) max = data[i];
-                else if (data[i] < min) min = data[i];
+                return default(DicomRange<double>);
             }
 
-            return new DicomRange<double>(min, max);
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Where(v => v != padding).Each(v => range.Join(v));
+            return range;
+        }
+
+        public DicomRange<double> GetMinMax()
+        {
+            if (Data == null || Data.Length == 0)
+            {
+                return default(DicomRange<double>);
+            }
+
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Each(v => range.Join(v));
+            return range;
         }
 
         public double GetPixel(int x, int y)
         {
-            return (double)Data[(y * Width) + x];
+            return Data[y * Width + x];
         }
 
         public IPixelData Rescale(double scale)
         {
-            if (scale == 1.0) return this;
-            int w = (int)(Width * scale);
-            int h = (int)(Height * scale);
-            int[] data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
+            var w = (int)(Width * scale);
+            var h = (int)(Height * scale);
+            if (w == Width && h == Height) return this;
+
+            var data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
             return new GrayscalePixelDataS32(w, h, data);
         }
 
@@ -860,10 +851,7 @@ namespace Dicom.Imaging.Render
 
             if (lut == null)
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -873,10 +861,7 @@ namespace Dicom.Imaging.Render
             }
             else
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -901,68 +886,54 @@ namespace Dicom.Imaging.Render
     {
         #region Private Members
 
-        private int _width;
-
-        private int _height;
-
-        private uint[] _data;
- 
         #endregion
 
         #region Public Constructor
 
         public GrayscalePixelDataU32(int width, int height, BitDepth bitDepth, IByteBuffer data)
         {
-            _width = width;
-            _height = height;
+            Width = width;
+            Height = height;
 
-            var uintData = Dicom.IO.ByteConverter.ToArray<uint>(data);
+            var uintData = ByteConverter.ToArray<uint>(data, bitDepth.BitsAllocated);
 
             if (bitDepth.BitsStored != 32)
             {
-                int mask = (1 << (bitDepth.HighBit + 1)) - 1;
+                // Normally, HighBit == BitsStored-1, and thus shiftLeft == shiftRight, and the two
+                // shifts in the loop below just zeroes the top shift bits.
+                // Separating shiftLeft from shiftRight handles exotic cases where low-order bits
+                // should also be discarded.
+                int shiftLeft = bitDepth.BitsAllocated - bitDepth.HighBit - 1;
+                int shiftRight = bitDepth.BitsAllocated - bitDepth.BitsStored;
 
-                Parallel.For(
-                    0,
-                    _height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
-                            for (int i = _width * y, e = i + _width; i < e; i++)
+                            for (int i = Width * y, e = i + Width; i < e; i++)
                             {
-                                uintData[i] = (uint)(uintData[i] & mask);
+                                // Remove masked high and low bits by shifting them out of the data type. 
+                                var d = uintData[i] << shiftLeft;
+                                uintData[i] = d >> shiftRight;
                             }
                         });
             }
 
-            _data = uintData;
+            Data = uintData;
         }
 
         private GrayscalePixelDataU32(int width, int height, uint[] data)
         {
-            _width = width;
-            _height = height;
-            _data = data;
+            Width = width;
+            Height = height;
+            Data = data;
         }
 
         #endregion
 
         #region Public Properties
 
-        public int Width
-        {
-            get
-            {
-                return _width;
-            }
-        }
+        public int Width { get; set; }
 
-        public int Height
-        {
-            get
-            {
-                return _height;
-            }
-        }
+        public int Height { get; set; }
 
         public int Components
         {
@@ -972,13 +943,7 @@ namespace Dicom.Imaging.Render
             }
         }
 
-        public uint[] Data
-        {
-            get
-            {
-                return _data;
-            }
-        }
+        public uint[] Data { get; set; }
 
         #endregion
 
@@ -986,30 +951,40 @@ namespace Dicom.Imaging.Render
 
         public DicomRange<double> GetMinMax(int padding)
         {
-            var min = Double.MaxValue;
-            var max = Double.MinValue;
-
-            var data = Data;
-            for (int i = 0; i < data.Length; i++)
+            if (Data == null || Data.Length == 0)
             {
-                if (data[i] > max) max = data[i];
-                else if (data[i] < min) min = data[i];
+                return default(DicomRange<double>);
             }
 
-            return new DicomRange<double>(min, max);
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Where(v => v != padding).Each(v => range.Join(v));
+            return range;
+        }
+
+        public DicomRange<double> GetMinMax()
+        {
+            if (Data == null || Data.Length == 0)
+            {
+                return default(DicomRange<double>);
+            }
+
+            var range = new DicomRange<double>(double.MaxValue, double.MinValue);
+            Data.Each(v => range.Join(v));
+            return range;
         }
 
         public double GetPixel(int x, int y)
         {
-            return (double)Data[(y * Width) + x];
+            return Data[y * Width + x];
         }
 
         public IPixelData Rescale(double scale)
         {
-            if (scale == 1.0) return this;
-            int w = (int)(Width * scale);
-            int h = (int)(Height * scale);
-            uint[] data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
+            var w = (int)(Width * scale);
+            var h = (int)(Height * scale);
+            if (w == Width && h == Height) return this;
+
+            var data = BilinearInterpolation.RescaleGrayscale(Data, Width, Height, w, h);
             return new GrayscalePixelDataU32(w, h, data);
         }
 
@@ -1018,10 +993,7 @@ namespace Dicom.Imaging.Render
             var data = Data;
             if (lut == null)
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -1031,10 +1003,7 @@ namespace Dicom.Imaging.Render
             }
             else
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width; i < e; i++)
                             {
@@ -1059,49 +1028,31 @@ namespace Dicom.Imaging.Render
     {
         #region Private Members
 
-        private int _width;
-
-        private int _height;
-
-        private readonly byte[] _data;
-
         #endregion
 
         #region Public Constructor
 
         public ColorPixelData24(int width, int height, IByteBuffer data)
         {
-            _width = width;
-            _height = height;
-            _data = data.Data;
+            Width = width;
+            Height = height;
+            Data = data.Data;
         }
 
         private ColorPixelData24(int width, int height, byte[] data)
         {
-            _width = width;
-            _height = height;
-            _data = data;
+            Width = width;
+            Height = height;
+            Data = data;
         }
 
         #endregion
 
         #region Public Properties
 
-        public int Width
-        {
-            get
-            {
-                return _width;
-            }
-        }
+        public int Width { get; set; }
 
-        public int Height
-        {
-            get
-            {
-                return _height;
-            }
-        }
+        public int Height { get; set; }
 
         public int Components
         {
@@ -1111,13 +1062,7 @@ namespace Dicom.Imaging.Render
             }
         }
 
-        public byte[] Data
-        {
-            get
-            {
-                return _data;
-            }
-        }
+        public byte[] Data { get; set; }
 
         #endregion
 
@@ -1129,19 +1074,26 @@ namespace Dicom.Imaging.Render
                 "Calculation of min/max pixel values is not supported for 24-bit color pixel data.");
         }
 
+        public DicomRange<double> GetMinMax()
+        {
+            throw new InvalidOperationException(
+                "Calculation of min/max pixel values is not supported for 24-bit color pixel data.");
+        }
+
         public double GetPixel(int x, int y)
         {
             var data = Data;
-            var p = ((y * Width) + x) * 3;
-            return (double)((data[p++] << 16) | (data[p++] << 8) | data[p++]);
+            var p = (y * Width + x) * 3;
+            return (data[p++] << 16) | (data[p++] << 8) | data[p];
         }
 
         public IPixelData Rescale(double scale)
         {
-            if (scale == 1.0) return this;
-            int w = (int)(Width * scale);
-            int h = (int)(Height * scale);
-            byte[] data = BilinearInterpolation.RescaleColor24(Data, Width, Height, w, h);
+            var w = (int)(Width * scale);
+            var h = (int)(Height * scale);
+            if (w == Width && h == Height) return this;
+
+            var data = BilinearInterpolation.RescaleColor24(Data, Width, Height, w, h);
             return new ColorPixelData24(w, h, data);
         }
 
@@ -1150,10 +1102,7 @@ namespace Dicom.Imaging.Render
             var data = Data;
             if (lut == null)
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width, p = i * 3; i < e; i++)
                             {
@@ -1163,10 +1112,7 @@ namespace Dicom.Imaging.Render
             }
             else
             {
-                Parallel.For(
-                    0,
-                    Height,
-                    y =>
+                Parallel.For(0, Height, y =>
                         {
                             for (int i = Width * y, e = i + Width, p = i * 3; i < e; i++)
                             {
@@ -1187,7 +1133,7 @@ namespace Dicom.Imaging.Render
             var histogram = new Histogram(Byte.MinValue, Byte.MaxValue);
 
             var data = Data;
-            for (int i = channel; i < data.Length; i += 3) histogram.Add(data[i]);
+            for (var i = channel; i < data.Length; i += 3) histogram.Add(data[i]);
 
             return histogram;
         }

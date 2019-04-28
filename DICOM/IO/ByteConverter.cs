@@ -55,6 +55,37 @@ namespace Dicom.IO
             return values;
         }
 
+        public static T[] ToArray<T>(IByteBuffer buffer, int bitsAllocated)
+        {
+            var bytesRequested = Marshal.SizeOf(typeof(T));
+            var bitsRequested = 8 * bytesRequested;
+            if (bitsAllocated > bitsRequested)
+            {
+                throw new ArgumentOutOfRangeException("bitsAllocated", "Bits allocated too large for array type");
+            }
+            if (bitsAllocated == bitsRequested)
+            {
+                return ToArray<T>(buffer);
+            }
+
+            var count = (int)(8 * buffer.Size / bitsAllocated);
+            var src = buffer.Data;
+            var dst = new byte[bytesRequested * count];
+
+            for (int j = 0, sij = 0; j < count; ++j)
+            {
+                for (int i = 0, dij = j * bitsRequested; i < bitsAllocated; ++i, ++sij, ++dij)
+                {
+                    if ((src[sij / 8] & (1 << (sij % 8))) != 0) dst[dij / 8] |= (byte)(1 << (dij % 8));
+                }
+            }
+
+            var values = new T[count];
+            System.Buffer.BlockCopy(dst, 0, values, 0, dst.Length);
+
+            return values;
+        }
+
         public static T Get<T>(IByteBuffer buffer, int n)
         {
             int size = Marshal.SizeOf(typeof(T));

@@ -11,21 +11,19 @@ namespace Dicom
     {
         public static DicomDataset Clone(this DicomDataset dataset)
         {
-            var ds = new DicomDataset(dataset);
-            ds.InternalTransferSyntax = dataset.InternalTransferSyntax;
-            return ds;
+            return new DicomDataset(dataset)
+            {
+                InternalTransferSyntax = dataset.InternalTransferSyntax
+            };
         }
 
         public static DateTime GetDateTime(this DicomDataset dataset, DicomTag date, DicomTag time)
         {
-            DicomDate dd = dataset.Get<DicomDate>(date);
-            DicomTime dt = dataset.Get<DicomTime>(time);
+            var dd = dataset.Get<DicomDate>(date);
+            var dt = dataset.Get<DicomTime>(time);
 
-            DateTime da = DateTime.Today;
-            if (dd != null && dd.Count > 0) da = dd.Get<DateTime>(0);
-
-            DateTime tm = DateTime.Today;
-            if (dt != null && dt.Count > 0) tm = dt.Get<DateTime>(0);
+            var da = dd != null && dd.Count > 0 ? dd.Get<DateTime>(0) : DateTime.MinValue;
+            var tm = dt != null && dt.Count > 0 ? dt.Get<DateTime>(0) : DateTime.MinValue;
 
             return new DateTime(da.Year, da.Month, da.Day, tm.Hour, tm.Minute, tm.Second);
         }

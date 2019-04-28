@@ -16,6 +16,8 @@ namespace Dicom
     /// </summary>
     public class DicomFile
     {
+        #region CONSTRUCTORS
+
         public DicomFile()
         {
             FileMetaInfo = new DicomFileMetaInformation();
@@ -30,13 +32,31 @@ namespace Dicom
             Format = DicomFileFormat.DICOM3;
         }
 
+        #endregion
+
+        #region PROPERTIES
+        
+        /// <summary>
+        /// Gets the file reference of the DICOM file.
+        /// </summary>
         public IFileReference File { get; protected set; }
 
+        /// <summary>
+        /// Gets the DICOM file format.
+        /// </summary>
         public DicomFileFormat Format { get; protected set; }
 
+        /// <summary>
+        /// Gets the DICOM file meta information of the file.
+        /// </summary>
         public DicomFileMetaInformation FileMetaInfo { get; protected set; }
 
+        /// <summary>
+        /// Gets the DICOM dataset of the file.
+        /// </summary>
         public DicomDataset Dataset { get; protected set; }
+
+        #endregion
 
         protected virtual void OnSave()
         {

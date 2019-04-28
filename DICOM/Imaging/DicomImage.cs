@@ -33,6 +33,8 @@ namespace Dicom.Imaging
 
         #endregion
 
+        #region CONSTRUCTORS
+
         /// <summary>Creates DICOM image object from dataset</summary>
         /// <param name="dataset">Source dataset</param>
         /// <param name="frame">Zero indexed frame number</param>
@@ -43,18 +45,17 @@ namespace Dicom.Imaging
             Load(dataset, frame);
         }
 
-#if !SILVERLIGHT
+
         /// <summary>Creates DICOM image object from file</summary>
         /// <param name="fileName">Source file</param>
         /// <param name="frame">Zero indexed frame number</param>
         public DicomImage(string fileName, int frame = 0)
+            : this(DicomFile.Open(fileName).Dataset, frame)
         {
-            _scale = 1.0;
-            ShowOverlays = true;
-            var file = DicomFile.Open(fileName);
-            Load(file.Dataset, frame);
         }
-#endif
+
+        #endregion
+
 
         /// <summary>Source DICOM dataset</summary>
         public DicomDataset Dataset { get; private set; }
@@ -193,11 +194,9 @@ namespace Dicom.Imaging
                 _overlayColor = value;
             }
         }
-
-
+        
         public int CurrentFrame { get; private set; }
 
-#if !SILVERLIGHT
         /// <summary>Renders DICOM image to System.Drawing.Image</summary>
         /// <param name="frame">Zero indexed frame number</param>
         /// <returns>Rendered image</returns>
@@ -213,8 +212,8 @@ namespace Dicom.Imaging
                 {
                     foreach (var overlay in _overlays)
                     {
-                        if ((frame + 1) < overlay.OriginFrame
-                            || (frame + 1) > (overlay.OriginFrame + overlay.NumberOfFrames - 1)) continue;
+                        if (frame + 1 < overlay.OriginFrame
+                            || (frame + 1) > overlay.OriginFrame + overlay.NumberOfFrames - 1) continue;
 
                         var og = new OverlayGraphic(
                             PixelDataFactory.Create(overlay),
@@ -222,7 +221,7 @@ namespace Dicom.Imaging
                             overlay.OriginY - 1,
                             OverlayColor);
                         graphic.AddOverlay(og);
-                        og.Scale(this._scale);
+                        og.Scale(_scale);
                     }
                 }
 
@@ -238,7 +237,6 @@ namespace Dicom.Imaging
                 }
             }
         }
-#endif
 
         /// <summary>
         /// Renders DICOM image to <see cref="System.Windows.Media.ImageSource"/> 
@@ -257,8 +255,8 @@ namespace Dicom.Imaging
                 {
                     foreach (var overlay in _overlays)
                     {
-                        if ((frame + 1) < overlay.OriginFrame
-                            || (frame + 1) > (overlay.OriginFrame + overlay.NumberOfFrames - 1)) continue;
+                        if (frame + 1 < overlay.OriginFrame
+                            || (frame + 1) > overlay.OriginFrame + overlay.NumberOfFrames - 1) continue;
 
                         var og = new OverlayGraphic(
                             PixelDataFactory.Create(overlay),
@@ -266,7 +264,7 @@ namespace Dicom.Imaging
                             overlay.OriginY - 1,
                             OverlayColor);
                         graphic.AddOverlay(og);
-                        og.Scale(this._scale);
+                        og.Scale(_scale);
                     }
                 }
 
@@ -380,8 +378,9 @@ namespace Dicom.Imaging
                 // generally ACR-NEMA
                 if (samples == 0 || samples == 1)
                 {
-                    if (Dataset.Contains(DicomTag.RedPaletteColorLookupTableData)) pi = PhotometricInterpretation.PaletteColor;
-                    else pi = PhotometricInterpretation.Monochrome2;
+                    pi = Dataset.Contains(DicomTag.RedPaletteColorLookupTableData)
+                        ? PhotometricInterpretation.PaletteColor
+                        : PhotometricInterpretation.Monochrome2;
                 }
                 else
                 {
@@ -409,7 +408,7 @@ namespace Dicom.Imaging
             }
             else
             {
-                throw new DicomImagingException("Unsupported pipeline photometric interpretation: {0}", pi.Value);
+                throw new DicomImagingException("Unsupported pipeline photometric interpretation: {0}", pi);
             }
         }
     }
