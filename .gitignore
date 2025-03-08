@@ -20,3 +20,27 @@ packages/
 DICOM/T4/part06.xml
 DICOM/T4/part07.xml
 DICOM/T4/part16.xml
+DICOM \[Unit Tests\]/.vs/DICOM \[Unit Tests\].csproj.dtbcache.json
+DICOM/.vs/DICOM.csproj.dtbcache.json
+Examples/C-Store SCP/.vs/C-Store SCP.csproj.dtbcache.json
+Examples/DICOM Media/.vs/DICOM Media.csproj.dtbcache.json
+Examples/Dicom Print SCP/.vs/Dicom Print SCP.csproj.dtbcache.json
+Examples/Dicom Print SCU/.vs/Dicom Print SCU.csproj.dtbcache.json
+Examples/Logging Serilog/.vs/Logging Serilog.csproj.dtbcache.json
+Logging/DICOM.log4net/.vs/DICOM.log4net.csproj.dtbcache.json
+Logging/DICOM.MetroLog/.vs/DICOM.MetroLog.csproj.dtbcache.json
+Logging/DICOM.NLog/.vs/DICOM.NLog.csproj.dtbcache.json
+Logging/DICOM.Serilog/.vs/DICOM.Serilog.csproj.dtbcache.json
+Tools/DICOM Compare/.vs/DICOM Compare.csproj.dtbcache.json
+Tools/DICOM Dump/.vs/DICOM Dump.csproj.dtbcache.json
+ConsoleTest/.vs/ConsoleTest.csproj.dtbcache.json
+.vs/DICOM/v17/DocumentLayout.json
+.vs/DICOM/v17/DocumentLayout.backup.json
+*.vsidx
+.vs/DICOM/v17/Browse.VC.db
+.vs/DICOM/v17/Browse.VC.db-shm
+.vs/DICOM/v17/Browse.VC.db-wal
+.vs/DICOM/v17/Browse.VC.opendb
+.vs/DICOM/v17/Solution.VC.db
+.vs/DICOM/v17/Solution.VC.db-shm
+.vs/DICOM/v17/Solution.VC.db-wal
