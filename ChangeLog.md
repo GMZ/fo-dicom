@@ -1,3 +1,6 @@
+#### v1.1.6 (03/08/2025)
+* Updated to .next 4.7.2
+#### v1.1.5 (2019) 
 #### v1.1.0 (12/18/2015)
 * Enable configuration of default encoding in the DicomDatasetReaderObserver (#54)
 * DicomDataset.Add(DicomTag, ...) method does not support multi-valued LO, PN, SH and UI tags (#51)

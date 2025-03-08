@@ -1,9 +1,7 @@
-# Fellow Oak DICOM for .NET
-
-Please join the [Google group](http://groups.google.com/group/fo-dicom) for updates and support. Binaries are available from [GitHub](https://github.com/rcd/fo-dicom/releases) and [NuGet](http://www.nuget.org/packages/fo-dicom).
+# Fellow Oak DICOM for .NET (GMZ classic version)
 
 ### Features
-* Targets .NET 4.5 and higher
+* Targets .NET 4.7.2 and higher
 * DICOM dictionary version 2015c
 * High-performance, fully asynchronous API
 * JPEG (including lossless), JPEG-LS, JPEG2000, and RLE image compression
