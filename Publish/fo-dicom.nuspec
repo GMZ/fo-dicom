@@ -13,9 +13,9 @@
     <language>en-US</language>
   </metadata>
   <files>
-    <file src="..\Distribute\Bin\Dicom.Native.dll" target="build\net45\Dicom.Native.dll" />
-    <file src="..\Distribute\Bin\Dicom.Native64.dll" target="build\net45\Dicom.Native64.dll" />
-    <file src="..\fo-dicom.targets" target="build\fo-dicom.targets" />
-    <file src="..\Distribute\Bin\Dicom.dll" target="lib\net45\Dicom.dll" />
+    <file src="build\net48\Dicom.Native.dll" target="build\net48\Dicom.Native.dll" />
+    <file src="build\net48\Dicom.Native64.dll" target="build\net48\Dicom.Native64.dll" />
+    <file src="build\fo-dicom.targets" target="build\fo-dicom.targets" />
+    <file src="lib\net48\Dicom.dll" target="lib\net48\Dicom.dll" />
   </files>
 </package>
