@@ -1,7 +1,7 @@
 # Fellow Oak DICOM for .NET (GMZ classic version)
 
 ### Features
-* Targets .NET 4.7.2 and higher
+* Targets .NET 4.8.1 and higher
 * DICOM dictionary version 2015c
 * High-performance, fully asynchronous API
 * JPEG (including lossless), JPEG-LS, JPEG2000, and RLE image compression

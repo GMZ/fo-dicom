@@ -13,6 +13,6 @@ using System.Reflection;
 [assembly: AssemblyTrademarkAttribute("")]
 [assembly: AssemblyCultureAttribute("")]
 
-[assembly: AssemblyVersionAttribute("1.1.5")]
-[assembly: AssemblyFileVersion("1.1.5.0")]
-[assembly: AssemblyInformationalVersionAttribute("1.1.5")]
+[assembly: AssemblyVersionAttribute("1.1.7")]
+[assembly: AssemblyFileVersion("1.1.7.0")]
+[assembly: AssemblyInformationalVersionAttribute("1.1.7")]
